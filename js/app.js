@@ -249,6 +249,7 @@ saveInvoiceBtn.onclick = async () => {
             await pb.collection("invoices").create(fd);
         }
 
+        saveInvoiceBtn.blur(); // 确保在模态框隐藏前移除焦点
         invoiceModal.hide();
         currentAttachments = []; // 清空 currentAttachments
         currentRecord = null; // 清空 currentRecord
