@@ -39,7 +39,7 @@ loginForm.addEventListener("submit", async e => {
     renderUI();
   } catch (err) { alert("登录失败：" + err.message); }
 });
-logoutBtn.onclick = () => { pb.authStore.clear(); renderUI(); });
+logoutBtn.onclick = () => { pb.authStore.clear(); renderUI(); };
 
 /* ---------- UI 渲染 ---------- */
 function renderUI() {
@@ -253,8 +253,10 @@ function removeAttachmentFromPreview(filename) {
 }
 
 /* ---------- 保存 ---------- */
+
 invoiceForm.addEventListener("submit", async (e) => {
     e.preventDefault(); // 阻止表单默认提交，以便进行异步保存
+    console.log("Attempting to save invoice...");
     try {
         const id = $("invoiceId").value;
         const fd = new FormData(invoiceForm);
@@ -291,10 +293,12 @@ invoiceForm.addEventListener("submit", async (e) => {
         currentAttachments = []; // 清空 currentAttachments
         currentRecord = null; // 清空 currentRecord
         loadInvoices();
+        console.log("Invoice saved successfully.");
     } catch (e) {
+        console.error("Error saving invoice:", e);
         alert("保存失败：" + e.message);
     }
-};
+});
 
 /* ---------- 删除 ---------- */
 async function delInvoice(id){
