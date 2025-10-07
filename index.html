@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>发票管理系统</title>
+
+  <!-- Bootstrap & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    body{background:#f8f9fa}
+    .invoice-card{transition:.2s;cursor:pointer}
+    .invoice-card:hover{transform:translateY(-4px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+    .invoice-card.selected{background:#d0eaff!important;border-color:#0d6efd!important}
+    #batchActions{position:fixed;bottom:20px;right:20px;z-index:1050;display:none}
+  </style>
+</head>
+<body>
+  <!-- 顶栏 -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#"><i class="bi bi-receipt-cutoff"></i> 发票管理系统</a>
+      <button id="logoutBtn" class="btn btn-outline-light" style="display:none"><i class="bi bi-box-arrow-right"></i> 退出</button>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <!-- 登录区 -->
+    <div id="loginSection" class="row justify-content-center">
+      <div class="col-md-5">
+        <div class="card shadow-lg border-0 rounded-lg mt-5">
+          <div class="card-header"><h3 class="text-center my-3">登录</h3></div>
+          <div class="card-body">
+            <form id="loginForm">
+              <div class="form-floating mb-3">
+                <input class="form-control" id="email" type="email" placeholder="name@example.com" required />
+                <label for="email">邮箱</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input class="form-control" id="password" type="password" placeholder="Password" required />
+                <label for="password">密码</label>
+              </div>
+              <button class="btn btn-primary w-100" type="submit">登录</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主区 -->
+    <div id="mainSection" style="display:none">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">我的发票</h2>
+        <button class="btn btn-primary" id="addInvoiceBtn"><i class="bi bi-plus-circle-fill"></i> 添加发票</button>
+      </div>
+
+      <!-- 搜索过滤 -->
+      <div class="row mb-3">
+        <div class="col-md-8"><input id="searchInput" class="form-control" placeholder="按发票号、供应商或描述搜索..."></div>
+        <div class="col-md-4">
+          <select id="statusFilter" class="form-select">
+            <option value="">所有状态</option>
+            <option value="pending">待处理</option>
+            <option value="approved">已批准</option>
+            <option value="rejected">已拒绝</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 列表 -->
+      <div id="invoiceList" class="row g-4"></div>
+      <div id="loading" class="text-center mt-5" style="display:none">
+        <div class="spinner-border text-primary"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 发票表单模态框 -->
+  <div class="modal fade" id="invoiceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="modalTitle" class="modal-title">添加发票</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="invoiceForm" novalidate>
+            <input type="hidden" id="invoiceId">
+            <div class="row">
+              <div class="col-md-6 mb-3"><input id="invoiceNumber" name="invoice_number" class="form-control" placeholder="发票号码" required></div>
+              <div class="col-md-6 mb-3"><input id="invoiceDate" name="invoice_date" type="date" class="form-control" required></div>
+              <div class="col-md-6 mb-3"><input id="vendor" name="vendor" class="form-control" placeholder="供应商" required></div>
+              <div class="col-md-6 mb-3"><input id="amount" name="amount" type="number" step="0.01" class="form-control" placeholder="金额" required></div>
+              <div class="col-md-6 mb-3"><input id="taxAmount" name="tax_amount" type="number" step="0.01" class="form-control" placeholder="税额"></div>
+              <div class="col-md-6 mb-3">
+                <select id="status" name="status" class="form-select">
+                  <option value="pending">待处理</option>
+                  <option value="approved">已批准</option>
+                  <option value="rejected">已拒绝</option>
+                </select>
+              </div>
+            </div>
+            <textarea id="description" name="description" class="form-control mb-3" placeholder="描述"></textarea>
+            <label class="form-label">附件 (PDF)</label>
+            <input id="attachments" name="attachments" type="file" accept=".pdf" multiple class="form-control mb-2">
+            <div id="attachmentPreview" class="small"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+          <button id="saveInvoiceBtn" class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量操作悬浮按钮 -->
+  <div id="batchTotalAmount" class="btn btn-light shadow-lg" style="position:fixed;bottom:75px;right:20px;z-index:1050;display:none;">
+    总金额: ¥0.00
+  </div>
+  <div id="batchActions" class="btn-group shadow-lg">
+    <button id="batchDeleteBtn" class="btn btn-danger"><i class="bi bi-trash-fill"></i> 删除</button>
+    <button id="batchDownloadBtn" class="btn btn-info"><i class="bi bi-download"></i> 下载</button>
+    <button id="deselectAllBtn" class="btn btn-secondary"><i class="bi bi-x-circle"></i> 取消</button>
+  </div>
+
+  <!-- 依赖 -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pocketbase@latest/dist/pocketbase.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+  <!-- 业务脚本 -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
