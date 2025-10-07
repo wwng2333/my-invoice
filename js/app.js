@@ -256,6 +256,11 @@ function removeAttachmentFromPreview(filename) {
 saveInvoiceBtn.onclick = async () => {
     try {
         const id = $("invoiceId").value;
+        const invoiceDate = $("invoiceDate").value;
+        if (!invoiceDate) {
+            alert("发票日期不能为空！");
+            return;
+        }
         const fd = new FormData(invoiceForm);
         fd.append("user", pb.authStore.model.id); // 归属用户
 
