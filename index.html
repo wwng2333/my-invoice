@@ -70,7 +70,27 @@
       </div>
 
       <!-- 列表 -->
-      <div id="invoiceList" class="row g-4"></div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">发票号</th>
+              <th scope="col">日期</th>
+              <th scope="col">供应商</th>
+              <th scope="col">金额</th>
+              <th scope="col">税额</th>
+              <th scope="col">状态</th>
+              <th scope="col">描述</th>
+              <th scope="col">附件</th>
+              <th scope="col">操作</th>
+            </tr>
+          </thead>
+          <tbody id="invoiceList">
+            <!-- 发票行将在这里动态加载 -->
+          </tbody>
+        </table>
+      </div>
       <div id="loading" class="text-center mt-5" style="display:none">
         <div class="spinner-border text-primary"></div>
       </div>

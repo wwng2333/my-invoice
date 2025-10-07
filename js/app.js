@@ -59,7 +59,7 @@ renderUI();
 /* ---------- 加载发票 ---------- */
 async function loadInvoices() {
   loading.style.display = "";
-  invoiceList.innerHTML = "";
+  invoiceList.innerHTML = ""; // 清空 tbody
   selected.clear();
   totalAmount = 0;
   updateTotalAmountDisplay();
@@ -84,57 +84,69 @@ async function loadInvoices() {
 
 /* ---------- 卡片元素 ---------- */
 function cardEl(rec) {
-  const col = document.createElement("div");
-  col.className = "col-md-4";
-  col.innerHTML = `
-    <div class="card invoice-card ${selected.has(rec.id) ? "selected":""}" data-id="${rec.id}">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-          <h5 class="card-title">${rec.description}</h5>
-          <span class="badge bg-${color(rec.status)}">${rec.status}</span>
-        </div>
-        <p class="mb-1">发票号：${rec.invoice_number}</p>
-        <p class="mb-1">日期：${new Date(rec.invoice_date).toLocaleDateString()}</p>
-        <h6 class="text-muted">金额：¥${Number(rec.amount).toFixed(2)}</h6>
-        <p class="text-truncate">${rec.vendor||""}</p>
-        ${(rec.attachments||[]).map((_,i)=>`<i class="bi bi-file-earmark-pdf-fill text-danger me-1" title="附件${i+1}"></i>`).join("")}
-        <div class="mt-2 d-flex justify-content-end">
-          <button class="btn btn-sm btn-outline-primary me-2 edit-btn"><i class="bi bi-pencil"></i></button>
-          <button class="btn btn-sm btn-outline-danger delete-btn"><i class="bi bi-trash"></i></button>
-        </div>
-      </div>
-    </div>`;
+  const tr = document.createElement("tr");
+  tr.className = `invoice-row ${selected.has(rec.id) ? "selected":""}`;
+  tr.dataset.id = rec.id;
+  tr.innerHTML = `
+    <td><input type="checkbox" class="row-select-checkbox" ${selected.has(rec.id) ? "checked":""}></td>
+    <td>${rec.invoice_number}</td>
+    <td>${new Date(rec.invoice_date).toLocaleDateString()}</td>
+    <td>${rec.vendor}</td>
+    <td>¥${Number(rec.amount).toFixed(2)}</td>
+    <td>${rec.tax_amount ? `¥${Number(rec.tax_amount).toFixed(2)}` : '-'}</td>
+    <td><span class="badge bg-${color(rec.status)}">${rec.status}</span></td>
+    <td class="text-truncate" style="max-width: 150px;">${rec.description || "-"}</td>
+    <td>${(rec.attachments||[]).map((_,i)=>`<i class="bi bi-file-earmark-pdf-fill text-danger me-1" title="附件${i+1}"></i>`).join("")}</td>
+    <td>
+      <button class="btn btn-sm btn-outline-primary me-2 edit-btn"><i class="bi bi-pencil"></i></button>
+      <button class="btn btn-sm btn-outline-danger delete-btn"><i class="bi bi-trash"></i></button>
+    </td>`;
+
   /* 事件 */
-  const card = col.querySelector(".invoice-card");
-  card.onclick = (e)=>{
-    if (e.target.closest(".edit-btn")||e.target.closest(".delete-btn")) return;
-    toggleSelect(rec.id,card);
+  tr.querySelector(".row-select-checkbox").onclick = (e) => {
+    e.stopPropagation(); // 阻止事件冒泡到行点击事件
+    toggleSelect(rec.id, tr);
   };
-  col.querySelector(".edit-btn").onclick = ()=>openModal(rec);
-  col.querySelector(".delete-btn").onclick= ()=>delInvoice(rec.id);
-  return col;
+  tr.querySelector(".edit-btn").onclick = (e) => {
+    e.stopPropagation(); // 阻止事件冒泡到行点击事件
+    openModal(rec);
+  };
+  tr.querySelector(".delete-btn").onclick = (e) => {
+    e.stopPropagation(); // 阻止事件冒泡到行点击事件
+    delInvoice(rec.id);
+  };
+  tr.onclick = () => {
+    toggleSelect(rec.id, tr);
+  };
+  return tr;
 }
 const color = s=>({approved:"success",rejected:"danger",pending:"warning"}[s]||"secondary");
 
 /* ---------- 选择逻辑 ---------- */
-function toggleSelect(id,card){
-  const amount = Number(card.querySelector("h6").textContent.replace("金额：¥", ""));
-  if (selected.has(id)){
+function toggleSelect(id, row) {
+  const amountText = row.querySelector("td:nth-child(5)").textContent; // 获取金额列的文本
+  const amount = Number(amountText.replace("¥", ""));
+
+  const checkbox = row.querySelector(".row-select-checkbox");
+
+  if (selected.has(id)) {
     selected.delete(id);
-    card.classList.remove("selected");
+    row.classList.remove("selected");
+    checkbox.checked = false;
     totalAmount -= amount;
-  }
-  else {
+  } else {
     selected.add(id);
-    card.classList.add("selected");
+    row.classList.add("selected");
+    checkbox.checked = true;
     totalAmount += amount;
   }
   updateTotalAmountDisplay();
   toggleBatchUI();
 }
-function toggleBatchUI(){
-  batchActions.style.display = selected.size?"flex":"none";
-  batchTotalAmount.style.display = selected.size?"block":"none";
+
+function toggleBatchUI() {
+  batchActions.style.display = selected.size ? "flex" : "none";
+  batchTotalAmount.style.display = selected.size ? "block" : "none";
   if (selected.size === 0) {
     totalAmount = 0;
     updateTotalAmountDisplay();
@@ -295,7 +307,8 @@ batchDownloadBtn.onclick = async ()=>{
 /* ---------- 取消选择 ---------- */
 deselectAllBtn.onclick = ()=>{
   selected.clear();
-  document.querySelectorAll(".invoice-card.selected").forEach(c=>c.classList.remove("selected"));
+  document.querySelectorAll(".invoice-row.selected").forEach(c=>c.classList.remove("selected"));
+  document.querySelectorAll(".row-select-checkbox").forEach(c=>c.checked = false);
   totalAmount = 0;
   updateTotalAmountDisplay();
   toggleBatchUI();
