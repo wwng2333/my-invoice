@@ -39,7 +39,7 @@ loginForm.addEventListener("submit", async e => {
     renderUI();
   } catch (err) { alert("登录失败：" + err.message); }
 });
-logoutBtn.onclick = () => { pb.authStore.clear(); renderUI(); };
+logoutBtn.onclick = () => { pb.authStore.clear(); renderUI(); });
 
 /* ---------- UI 渲染 ---------- */
 function renderUI() {
