@@ -253,7 +253,8 @@ function removeAttachmentFromPreview(filename) {
 }
 
 /* ---------- 保存 ---------- */
-saveInvoiceBtn.onclick = async () => {
+invoiceForm.addEventListener("submit", async (e) => {
+    e.preventDefault(); // 阻止表单默认提交，以便进行异步保存
     try {
         const id = $("invoiceId").value;
         const fd = new FormData(invoiceForm);
