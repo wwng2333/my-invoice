@@ -48,6 +48,30 @@ function renderUI() {
     mainSection .style.display = "";
     logoutBtn.style.display    = "";
     loadInvoices();
+    // 为可排序的表头添加事件监听器
+    document.querySelectorAll("th[data-sort-by]").forEach(th => {
+      th.addEventListener("click", () => {
+        console.log("Sort header clicked:", th.dataset.sortBy, th.dataset.sortOrder);
+        const sortBy = th.dataset.sortBy;
+        let sortOrder = th.dataset.sortOrder;
+
+        // 切换排序顺序
+        sortOrder = sortOrder === "asc" ? "desc" : "asc";
+        th.dataset.sortOrder = sortOrder;
+
+        // 更新所有排序图标
+        document.querySelectorAll("th[data-sort-by] i").forEach(icon => {
+          icon.className = "bi bi-sort-alpha-down"; // 重置所有图标
+        });
+        // 更新当前点击的图标
+        const icon = th.querySelector("i");
+        if (icon) {
+          icon.className = sortOrder === "asc" ? "bi bi-sort-alpha-down" : "bi bi-sort-alpha-up";
+        }
+
+        loadInvoices(sortBy, sortOrder);
+      });
+    });
   } else {
     loginSection.style.display = "";
     mainSection .style.display = "none";
@@ -57,7 +81,7 @@ function renderUI() {
 renderUI();
 
 /* ---------- 加载发票 ---------- */
-async function loadInvoices() {
+async function loadInvoices(sortBy = "created", sortOrder = "desc") {
   loading.style.display = "";
   invoiceList.innerHTML = ""; // 清空 tbody
   selected.clear();
@@ -74,7 +98,7 @@ async function loadInvoices() {
 
   try {
     const records = await pb.collection("invoices").getFullList({
-      sort: "-created",
+      sort: `${sortOrder === "desc" ? "-" : ""}${sortBy}`,
       filter: filters.join(" && ")
     });
     records.forEach(r => invoiceList.appendChild(cardEl(r)));
