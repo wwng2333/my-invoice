@@ -1,4 +1,4 @@
-# Invoice-PB
+# MyInvoice
 
 这是一个基于 PocketBase 的发票管理应用，支持发票的增删改查、附件上传/删除、批量操作等功能。
 
