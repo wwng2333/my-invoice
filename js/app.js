@@ -114,7 +114,7 @@ function cardEl(rec) {
   tr.innerHTML = `
     <td><input type="checkbox" class="row-select-checkbox" ${selected.has(rec.id) ? "checked":""}></td>
     <td>${rec.invoice_number}</td>
-    <td>${new Date(rec.invoice_date).toLocaleDateString()}</td>
+    <td>${new Date(rec.invoice_date).toISOString().slice(0,10)}</td>
     <td>${rec.vendor}</td>
     <td>¥${Number(rec.amount).toFixed(2)}</td>
     <td>${rec.tax_amount ? `¥${Number(rec.tax_amount).toFixed(2)}` : '-'}</td>
@@ -205,7 +205,7 @@ function openModal(rec){
   if(rec){
     $("invoiceNumber").value = rec.invoice_number;
     // 日期字段需截取 YYYY-MM-DD 才能填充到 date 输入框
-    $("invoiceDate").value  = rec.invoice_date ? rec.invoice_date.slice(0,10) : "";
+    $("invoiceDate").value  = rec.invoice_date ? new Date(rec.invoice_date).toISOString().slice(0,10) : "";
     $("vendor").value    = rec.vendor;
     $("amount").value    =rec.amount;
     $("taxAmount").value =rec.tax_amount||"";
