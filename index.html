@@ -52,7 +52,26 @@
     <!-- 主区 -->
     <div id="mainSection" style="display:none">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="mb-0">我的发票</h2>
+        <div class="d-flex align-items-center">
+          <h2 class="mb-0 me-3">我的发票</h2>
+          <!-- 分页控件 -->
+          <div id="paginationControls" class="d-flex align-items-center">
+            <div class="me-3">
+              <label for="itemsPerPageSelect" class="form-label mb-0">每页显示:</label>
+              <select id="itemsPerPageSelect" class="form-select form-select-sm d-inline-block w-auto">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="9999">全部</option>
+              </select>
+            </div>
+            <nav aria-label="Page navigation">
+              <ul id="pagination" class="pagination mb-0">
+                <!-- Pagination links will be injected here by JavaScript -->
+              </ul>
+            </nav>
+          </div>
+        </div>
         <button class="btn btn-primary" id="addInvoiceBtn"><i class="bi bi-plus-circle-fill"></i> 添加发票</button>
       </div>
 
