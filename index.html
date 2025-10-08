@@ -141,6 +141,13 @@
     总金额: ¥0.00
   </div>
   <div id="batchActions" class="btn-group shadow-lg">
+    <select id="batchStatusSelect" class="form-select me-2" style="width: auto;">
+      <option value="">选择状态</option>
+      <option value="pending">待处理</option>
+      <option value="approved">已批准</option>
+      <option value="rejected">已拒绝</option>
+    </select>
+    <button id="batchSetStatusBtn" class="btn btn-warning me-2"><i class="bi bi-arrow-repeat"></i> 设置状态</button>
     <button id="batchDeleteBtn" class="btn btn-danger"><i class="bi bi-trash-fill"></i> 删除</button>
     <button id="batchDownloadBtn" class="btn btn-info"><i class="bi bi-download"></i> 下载</button>
     <button id="deselectAllBtn" class="btn btn-secondary"><i class="bi bi-x-circle"></i> 取消</button>

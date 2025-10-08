@@ -23,6 +23,8 @@ const batchDownloadBtn= $("batchDownloadBtn");
 const deselectAllBtn  = $("deselectAllBtn");
 const batchTotalAmount= $("batchTotalAmount");
 const selectAllCheckbox = $("selectAllCheckbox");
+const batchStatusSelect = $("batchStatusSelect");
+const batchSetStatusBtn = $("batchSetStatusBtn");
 let attachments       = $("attachments");
 
 let selected = new Set();
@@ -315,10 +317,34 @@ async function delInvoice(id){
 
 /* ---------- 批量删除 ---------- */
 batchDeleteBtn.onclick = async ()=>{
-  if(!selected.size||!confirm(`删除选中 ${selected.size} 条?`))return;
+  if(!selected.size||!confirm(`确定删除选中 ${selected.size} 条?`))return;
   loading.style.display="";
   await Promise.all([...selected].map(id=>pb.collection("invoices").delete(id)));
   selected.clear();toggleBatchUI();loadInvoices();
+};
+
+/* ---------- 批量设置状态 ---------- */
+batchSetStatusBtn.onclick = async () => {
+  const newStatus = batchStatusSelect.value;
+  if (!newStatus) {
+    alert("请选择一个状态！");
+    return;
+  }
+  if (!selected.size || !confirm(`确定将选中 ${selected.size} 条发票状态设置为 "${newStatus}"?`)) return;
+
+  loading.style.display = "";
+  try {
+    await Promise.all([...selected].map(id =>
+      pb.collection("invoices").update(id, { status: newStatus })
+    ));
+    selected.clear();
+    toggleBatchUI();
+    loadInvoices();
+    batchStatusSelect.value = ""; // 重置选择框
+  } catch (e) {
+    alert("批量设置状态失败：" + e.message);
+  }
+  loading.style.display = "none";
 };
 
 /* ---------- 批量下载附件 ---------- */
