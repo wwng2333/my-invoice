@@ -22,6 +22,7 @@ const batchDeleteBtn  = $("batchDeleteBtn");
 const batchDownloadBtn= $("batchDownloadBtn");
 const deselectAllBtn  = $("deselectAllBtn");
 const batchTotalAmount= $("batchTotalAmount");
+const batchCount      = $("batchCount");
 const selectAllCheckbox = $("selectAllCheckbox");
 const batchStatusSelect = $("batchStatusSelect");
 const batchSetStatusBtn = $("batchSetStatusBtn");
@@ -92,6 +93,7 @@ async function loadInvoices(sortBy = "created", sortOrder = "desc") {
   updateTotalAmountDisplay();
   toggleBatchUI();
   selectAllCheckbox.checked = false; // 重置全选框状态
+  batchCount.textContent = ""; // 清空已选数量显示
 
   const filters = [];
   if (searchInput.value.trim()) {
@@ -179,6 +181,7 @@ function toggleSelect(id, row) {
 function toggleBatchUI() {
   batchActions.style.display = selected.size ? "flex" : "none";
   batchTotalAmount.style.display = selected.size ? "block" : "none";
+  batchCount.style.display = selected.size ? "block" : "none";
   if (selected.size === 0) {
     totalAmount = 0;
     updateTotalAmountDisplay();
@@ -187,6 +190,7 @@ function toggleBatchUI() {
 
 function updateTotalAmountDisplay() {
   batchTotalAmount.textContent = `总金额: ¥${totalAmount.toFixed(2)}`;
+  batchCount.textContent = `已选: ${selected.size} 条`;
 }
 
 /* ---------- 搜索过滤监听 ---------- */
@@ -377,34 +381,6 @@ deselectAllBtn.onclick = ()=>{
 };
 
 /* ---------- 全选 ---------- */
-selectAllCheckbox.onchange = () => {
-  const isChecked = selectAllCheckbox.checked;
-  document.querySelectorAll(".invoice-row").forEach(row => {
-    const id = row.dataset.id;
-    const checkbox = row.querySelector(".row-select-checkbox");
-    const amountText = row.querySelector("td:nth-child(5)").textContent;
-    const amount = Number(amountText.replace("¥", ""));
-
-    if (isChecked) {
-      if (!selected.has(id)) {
-        selected.add(id);
-        row.classList.add("selected");
-        checkbox.checked = true;
-        totalAmount += amount;
-      }
-    } else {
-      if (selected.has(id)) {
-        selected.delete(id);
-        row.classList.remove("selected");
-        checkbox.checked = false;
-        totalAmount -= amount;
-      }
-    }
-  });
-  updateTotalAmountDisplay();
-  toggleBatchUI();
-};
-
 // 监听 Ctrl+A 快捷键
 document.addEventListener("keydown", (e) => {
   if (e.ctrlKey && e.key === "a") {
@@ -437,50 +413,6 @@ document.addEventListener("keydown", (e) => {
     searchInput.focus();
   }
 });
-selectAllCheckbox.onchange = () => {
-  const isChecked = selectAllCheckbox.checked;
-  document.querySelectorAll(".invoice-row").forEach(row => {
-    const id = row.dataset.id;
-    const checkbox = row.querySelector(".row-select-checkbox");
-    const amountText = row.querySelector("td:nth-child(5)").textContent;
-    const amount = Number(amountText.replace("¥", ""));
-
-    if (isChecked) {
-      if (!selected.has(id)) {
-        selected.add(id);
-        row.classList.add("selected");
-        checkbox.checked = true;
-        totalAmount += amount;
-      }
-    } else {
-      if (selected.has(id)) {
-        selected.delete(id);
-        row.classList.remove("selected");
-        checkbox.checked = false;
-        totalAmount -= amount;
-      }
-    }
-  });
-  updateTotalAmountDisplay();
-  toggleBatchUI();
-};
-  }
-  zip.generateAsync({type:"blob"}).then(b=>saveAs(b,"invoices.zip"));
-  loading.style.display="none";
-};
-
-/* ---------- 取消选择 ---------- */
-deselectAllBtn.onclick = ()=>{
-  selected.clear();
-  document.querySelectorAll(".invoice-row.selected").forEach(c=>c.classList.remove("selected"));
-  document.querySelectorAll(".row-select-checkbox").forEach(c=>c.checked = false);
-  totalAmount = 0;
-  updateTotalAmountDisplay();
-  toggleBatchUI();
-  selectAllCheckbox.checked = false; // 取消全选框的选中状态
-};
-
-/* ---------- 全选 ---------- */
 selectAllCheckbox.onchange = () => {
   const isChecked = selectAllCheckbox.checked;
   document.querySelectorAll(".invoice-row").forEach(row => {
