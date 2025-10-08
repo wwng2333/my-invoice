@@ -22,6 +22,7 @@ const batchDeleteBtn  = $("batchDeleteBtn");
 const batchDownloadBtn= $("batchDownloadBtn");
 const deselectAllBtn  = $("deselectAllBtn");
 const batchTotalAmount= $("batchTotalAmount");
+const selectAllCheckbox = $("selectAllCheckbox");
 let attachments       = $("attachments");
 
 let selected = new Set();
@@ -88,6 +89,7 @@ async function loadInvoices(sortBy = "created", sortOrder = "desc") {
   totalAmount = 0;
   updateTotalAmountDisplay();
   toggleBatchUI();
+  selectAllCheckbox.checked = false; // 重置全选框状态
 
   const filters = [];
   if (searchInput.value.trim()) {
@@ -166,6 +168,10 @@ function toggleSelect(id, row) {
   }
   updateTotalAmountDisplay();
   toggleBatchUI();
+  // 更新全选框的状态
+  const allCheckboxes = document.querySelectorAll(".row-select-checkbox");
+  const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+  selectAllCheckbox.checked = allChecked;
 }
 
 function toggleBatchUI() {
@@ -339,6 +345,36 @@ deselectAllBtn.onclick = ()=>{
   document.querySelectorAll(".invoice-row.selected").forEach(c=>c.classList.remove("selected"));
   document.querySelectorAll(".row-select-checkbox").forEach(c=>c.checked = false);
   totalAmount = 0;
+  updateTotalAmountDisplay();
+  toggleBatchUI();
+  selectAllCheckbox.checked = false; // 取消全选框的选中状态
+};
+
+/* ---------- 全选 ---------- */
+selectAllCheckbox.onchange = () => {
+  const isChecked = selectAllCheckbox.checked;
+  document.querySelectorAll(".invoice-row").forEach(row => {
+    const id = row.dataset.id;
+    const checkbox = row.querySelector(".row-select-checkbox");
+    const amountText = row.querySelector("td:nth-child(5)").textContent;
+    const amount = Number(amountText.replace("¥", ""));
+
+    if (isChecked) {
+      if (!selected.has(id)) {
+        selected.add(id);
+        row.classList.add("selected");
+        checkbox.checked = true;
+        totalAmount += amount;
+      }
+    } else {
+      if (selected.has(id)) {
+        selected.delete(id);
+        row.classList.remove("selected");
+        checkbox.checked = false;
+        totalAmount -= amount;
+      }
+    }
+  });
   updateTotalAmountDisplay();
   toggleBatchUI();
 };
