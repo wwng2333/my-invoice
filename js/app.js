@@ -27,12 +27,18 @@ const selectAllCheckbox = $("selectAllCheckbox");
 const batchStatusSelect = $("batchStatusSelect");
 const batchSetStatusBtn = $("batchSetStatusBtn");
 let attachments       = $("attachments");
+const paginationControls = $("paginationControls");
+const pagination      = $("pagination");
+const itemsPerPageSelect = $("itemsPerPageSelect");
 
 let selected = new Set();
 let totalAmount = 0;
 // 当前正在编辑的记录已有附件列表，用于更新时保留
 let currentAttachments = [];
 let currentRecord = null;
+let currentPage = 1;
+let itemsPerPage; // 默认每页显示10条
+let totalPages = 0;
 
 /* ---------- 登录 / 退出 ---------- */
 loginForm.addEventListener("submit", async e => {
@@ -51,7 +57,9 @@ function renderUI() {
     loginSection.style.display = "none";
     mainSection .style.display = "";
     logoutBtn.style.display    = "";
-    loadInvoices();
+    // 初始化 itemsPerPage
+    itemsPerPage = parseInt(itemsPerPageSelect.value) || 10;
+    loadInvoices(undefined, undefined, currentPage, itemsPerPage);
     // 为可排序的表头添加事件监听器
     document.querySelectorAll("th[data-sort-by]").forEach(th => {
       th.addEventListener("click", () => {
@@ -76,6 +84,15 @@ function renderUI() {
         loadInvoices(sortBy, sortOrder);
       });
     });
+    // 每页显示数量改变事件
+    itemsPerPageSelect.onchange = () => {
+      itemsPerPage = parseInt(itemsPerPageSelect.value);
+      currentPage = 1; // 改变每页数量时重置到第一页
+      const currentSortBy = document.querySelector("th[data-sort-by][data-sort-order]");
+      const sortBy = currentSortBy ? currentSortBy.dataset.sortBy : "invoice_date";
+      const sortOrder = currentSortBy ? currentSortBy.dataset.sortOrder : "desc";
+      loadInvoices(sortBy, sortOrder, currentPage, itemsPerPage);
+    };
   } else {
     loginSection.style.display = "";
     mainSection .style.display = "none";
@@ -83,9 +100,7 @@ function renderUI() {
   }
 }
 renderUI();
-
-/* ---------- 加载发票 ---------- */
-async function loadInvoices(sortBy = "created", sortOrder = "desc") {
+async function loadInvoices(sortBy = "invoice_date", sortOrder = "desc", page = currentPage, perPage = itemsPerPage) {
   loading.style.display = "";
   invoiceList.innerHTML = ""; // 清空 tbody
   selected.clear();
@@ -103,14 +118,88 @@ async function loadInvoices(sortBy = "created", sortOrder = "desc") {
   if (statusFilter.value) filters.push(`status = "${statusFilter.value}"`);
 
   try {
-    const records = await pb.collection("invoices").getFullList({
+    const result = await pb.collection("invoices").getList(page, perPage, {
       sort: `${sortOrder === "desc" ? "-" : ""}${sortBy}`,
       filter: filters.join(" && ")
     });
-    records.forEach(r => invoiceList.appendChild(cardEl(r)));
+    result.items.forEach(r => invoiceList.appendChild(cardEl(r)));
+    currentPage = result.page;
+    totalPages = result.totalPages;
+    renderPagination();
   } catch (e) { alert("加载失败：" + e.message); }
   loading.style.display = "none";
 }
+
+// 渲染分页控件
+function renderPagination() {
+  pagination.innerHTML = ""; // 清空现有分页
+  if (totalPages <= 1) {
+    paginationControls.style.display = "none";
+    return;
+  }
+  paginationControls.style.display = "flex";
+
+  // 上一页按钮
+  const prevItem = document.createElement("li");
+  prevItem.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
+  prevItem.innerHTML = `<a class="page-link" href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>`;
+  prevItem.onclick = (e) => { e.preventDefault(); if (currentPage > 1) { currentPage--; loadInvoices(); } };
+  pagination.appendChild(prevItem);
+
+  // 页码
+  let startPage = Math.max(1, currentPage - 2);
+  let endPage = Math.min(totalPages, currentPage + 2);
+
+  if (startPage > 1) {
+    const firstPageItem = document.createElement("li");
+    firstPageItem.className = `page-item ${1 === currentPage ? "active" : ""}`;
+    firstPageItem.innerHTML = `<a class="page-link" href="#">1</a>`;
+    firstPageItem.onclick = (e) => { e.preventDefault(); currentPage = 1; loadInvoices(); };
+    pagination.appendChild(firstPageItem);
+    if (startPage > 2) {
+      const ellipsisItem = document.createElement("li");
+      ellipsisItem.className = "page-item disabled";
+      ellipsisItem.innerHTML = `<span class="page-link">...</span>`;
+      pagination.appendChild(ellipsisItem);
+    }
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    const pageItem = document.createElement("li");
+    pageItem.className = `page-item ${i === currentPage ? "active" : ""}`;
+    pageItem.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+    pageItem.onclick = (e) => { e.preventDefault(); currentPage = i; loadInvoices(); };
+    pagination.appendChild(pageItem);
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      const ellipsisItem = document.createElement("li");
+      ellipsisItem.className = "page-item disabled";
+      ellipsisItem.innerHTML = `<span class="page-link">...</span>`;
+      pagination.appendChild(ellipsisItem);
+    }
+    const lastPageItem = document.createElement("li");
+    lastPageItem.className = `page-item ${totalPages === currentPage ? "active" : ""}`;
+    lastPageItem.innerHTML = `<a class="page-link" href="#">${totalPages}</a>`;
+    lastPageItem.onclick = (e) => { e.preventDefault(); currentPage = totalPages; loadInvoices(); };
+    pagination.appendChild(lastPageItem);
+  }
+
+  // 下一页按钮
+  const nextItem = document.createElement("li");
+  nextItem.className = `page-item ${currentPage === totalPages ? "disabled" : ""}`;
+  nextItem.innerHTML = `<a class="page-link" href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span></a>`;
+  nextItem.onclick = (e) => { e.preventDefault(); if (currentPage < totalPages) { currentPage++; loadInvoices(); } };
+  pagination.appendChild(nextItem);
+}
+
+// 每页显示数量改变事件
+itemsPerPageSelect.onchange = () => {
+  itemsPerPage = parseInt(itemsPerPageSelect.value);
+  currentPage = 1; // 改变每页数量时重置到第一页
+  loadInvoices();
+};
 
 /* ---------- 卡片元素 ---------- */
 function cardEl(rec) {
@@ -194,7 +283,7 @@ function updateTotalAmountDisplay() {
 }
 
 /* ---------- 搜索过滤监听 ---------- */
-[searchInput,statusFilter].forEach(el=>el.oninput=debounce(loadInvoices,300));
+[searchInput,statusFilter].forEach(el=>el.oninput=debounce(() => { currentPage = 1; loadInvoices(); },300));
 function debounce(fn,ms){let t;return ()=>{clearTimeout(t);t=setTimeout(fn,ms);}}
 
 /* ---------- 新增 / 编辑 ---------- */
