@@ -30,6 +30,7 @@ let attachments       = $("attachments");
 const paginationControls = $("paginationControls");
 const pagination      = $("pagination");
 const itemsPerPageSelect = $("itemsPerPageSelect");
+const recognizeInvoiceNumberBtn = $("recognizeInvoiceNumberBtn");
 
 let selected = new Set();
 let totalAmount = 0;
@@ -315,6 +316,56 @@ function openModal(rec){
     renderAttachmentPreview(); // 调用新的渲染函数
   }
   invoiceModal.show();
+
+  // 识别发票号码按钮点击事件
+  recognizeInvoiceNumberBtn.onclick = async () => {
+    const files = attachments.files;
+    if (files.length === 0) {
+      alert("请先选择 PDF 附件！");
+      return;
+    }
+    if (files.length > 1) {
+      alert("目前只支持识别单个 PDF 文件的发票号码。");
+      return;
+    }
+
+    const file = files[0];
+    if (file.type !== "application/pdf") {
+      alert("请选择 PDF 文件！");
+      return;
+    }
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({
+        data: arrayBuffer,
+        cMapUrl: './cmaps/',
+        cMapPacked: true,
+      }).promise;
+      let fullText = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        fullText += textContent.items.map(item => item.str).join(" ");
+      }
+
+      console.log("提取到的 PDF 文本:", fullText); // 打印全部文本到控制台
+
+      // 尝试识别发票号码，这里使用一个简单的正则表达式作为示例
+      // 实际应用中可能需要更复杂的正则表达式或模式匹配
+      const invoiceNumberMatch = fullText.match(/发票号码[:：]?[\s\S]*?(\d{8,})/);
+      if (invoiceNumberMatch && invoiceNumberMatch[1]) {
+        $("invoiceNumber").value = invoiceNumberMatch[1];
+        alert("发票号码识别成功！");
+      } else {
+        alert("未能识别到发票号码，请手动输入。");
+      }
+
+    } catch (error) {
+      console.error("识别发票号码时出错:", error);
+      alert("识别发票号码时出错: " + error.message);
+    }
+  };
 }
 
 // 渲染附件预览
