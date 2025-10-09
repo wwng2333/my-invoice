@@ -445,8 +445,21 @@ batchDownloadBtn.onclick = async ()=>{
   if(!selected.size)return;
   loading.style.display="";
   const zip = new JSZip();
+  const invoicesData = []; // 用于存储发票数据以生成 CSV
+
   for(const id of selected){
     const rec = await pb.collection("invoices").getOne(id);
+    invoicesData.push({
+      invoice_number: rec.invoice_number,
+      invoice_date: new Date(rec.invoice_date).toISOString().slice(0,10),
+      vendor: rec.vendor,
+      amount: Number(rec.amount).toFixed(2),
+      tax_amount: Number(rec.tax_amount).toFixed(2),
+      status: rec.status,
+      description: rec.description || "",
+      attachments: (rec.attachments || []).join("; ")
+    });
+
     let fileCounter = 0;
     for(const file of rec.attachments||[]){
       const blob = await fetch(pb.files.getURL(rec,file)).then(r=>r.blob());
@@ -454,6 +467,16 @@ batchDownloadBtn.onclick = async ()=>{
       zip.file(`${rec.invoice_number}_${++fileCounter}.${originalExtension}`,blob);
     }
   }
+
+  // 生成 CSV 文件
+  if (invoicesData.length > 0) {
+    const headers = Object.keys(invoicesData[0]);
+    const csvContent = [headers.join(","), ...invoicesData.map(row => headers.map(fieldName => JSON.stringify(row[fieldName])).join(","))].join("\n");
+    // 添加 UTF-8 BOM，确保 Excel 等软件正确识别中文编码
+    const csvWithBOM = "\ufeff" + csvContent;
+    zip.file("invoices.csv", csvWithBOM);
+  }
+
   zip.generateAsync({type:"blob"}).then(b=>saveAs(b,"invoices.zip"));
   loading.style.display="none";
 };
