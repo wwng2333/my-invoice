@@ -24,7 +24,7 @@
 ## 设置与运行
 
 ### 1. 安装 PocketBase
-从 [PocketBase 官网](https://pocketbase.io/docs/getting-started/) 下载最新版本的 PocketBase 可执行文件。
+从 [Github](https://github.com/pocketbase/pocketbase/releases/) 下载最新版本的 PocketBase 可执行文件。
 
 ### 2. 配置 PocketBase
 - 将 PocketBase 可执行文件放在项目根目录。
