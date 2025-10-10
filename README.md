@@ -23,7 +23,40 @@
 - **后端**: PocketBase (数据库、文件存储和 API)
 - **依赖**: Bootstrap, JSZip (用于 ZIP 下载), FileSaver.js (用于保存文件), PDF.js (用于识别发票中的税号)
 
-## 设置与运行
+## Docker 部署
+```yaml
+services:
+  my-invoice:
+    image: ghcr.io/wwng2333/my-invoice:latest
+    container_name: my-invoice
+    restart: unless-stopped
+    environment:
+      PB_HOST: 0.0.0.0
+      PB_PORT: 8090
+      TZ: Asia/Shanghai
+    ports:
+      - "5173:8090"
+    volumes:
+      - ./pb_data:/app/pb_data
+      - ./pb_migrations:/app/pb_migrations
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8090/api/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+```
+
+## 手动部署
 
 ### 1. 安装 PocketBase
 从 [Github](https://github.com/pocketbase/pocketbase/releases/) 下载最新版本的 PocketBase 可执行文件。
