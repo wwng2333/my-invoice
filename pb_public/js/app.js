@@ -139,6 +139,9 @@ async function loadInvoices(sortBy = "invoice_date", sortOrder = "desc", page = 
       filter: filters.join(" && ")
     });
     result.items.forEach(r => invoiceList.appendChild(cardEl(r)));
+    if (result.items.length === 0) {
+      invoiceList.innerHTML = `<tr><td colspan="9" class="text-center py-4">没有发票</td></tr>`;
+    }
     currentPage = result.page;
     totalPages = result.totalPages;
     renderPagination();
@@ -231,7 +234,7 @@ function cardEl(rec) {
 
     <td><span class="badge bg-${color(rec.status)}">${rec.status}</span></td>
     <td class="text-truncate" style="max-width: 150px;">${rec.description || "-"}</td>
-    <td>${(rec.attachments||[]).map((_,i)=>`<i class="bi bi-file-earmark-pdf-fill text-danger me-1" title="附件${i+1}"></i>`).join("")}</td>
+    <td>${(rec.attachments||[]).length === 0 ? "没有发票" : (rec.attachments||[]).map((_,i)=>`<i class="bi bi-file-earmark-pdf-fill text-danger me-1" title="附件${i+1}"></i>`).join("")}</td>
     <td>
       <button class="btn btn-sm btn-outline-primary me-2 edit-btn"><i class="bi bi-pencil"></i></button>
       <button class="btn btn-sm btn-outline-danger delete-btn"><i class="bi bi-trash"></i></button>
