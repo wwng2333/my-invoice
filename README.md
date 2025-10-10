@@ -35,7 +35,7 @@
   默认地址： http://127.0.0.1:8090 。
 
 ### 3. 运行
-- 在 PocketBase 后台建立 Superadmin 和 users。
+- 在 PocketBase 后台 (http://127.0.0.1:8090/_/) 建立 `superuser` 和 `user`，`superuser` 用于后台管理，`user`为普通账户，用于前台登录。
 - 通过 PocketBase 服务访问： http://127.0.0.1:8090/ ，使用上一步中建立的 users 账户登录。
 
 ## 贡献
