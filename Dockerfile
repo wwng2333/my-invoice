@@ -24,8 +24,8 @@ RUN apk update && apk add --no-cache ca-certificates tzdata && rm -rf /var/cache
 COPY --from=downloader /pocketbase /app/pocketbase
 
 # copy public assets and migrations (if any) into image
-COPY pb_public /app/
-COPY pb_migrations /app/
+COPY pb_public /app/pb_public
+COPY pb_migrations /app/pb_migrations
 
 # expose default port (can be mapped externally)
 EXPOSE 8090
