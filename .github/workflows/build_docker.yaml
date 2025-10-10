@@ -1,4 +1,4 @@
-name: Relase on pocketbase/release
+name: build and push docker
 on:
   schedule:
     - cron: "0 * * * *"
@@ -45,6 +45,9 @@ jobs:
             type=semver,pattern={{major}},value=${{ steps.version.outputs.value }}
 
       - name: Build and push
+        permissions:
+          contents: read
+          packages: write
         uses: docker/build-push-action@v6
         with:
           context: .
