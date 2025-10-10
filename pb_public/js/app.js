@@ -604,3 +604,9 @@ selectAllCheckbox.onchange = () => {
   updateTotalAmountDisplay();
   toggleBatchUI();
 };
+
+// 初始化 flatpickr 日期选择
+flatpickr("#invoiceDate", {
+  dateFormat: "Y-m-d",
+  locale: flatpickr.l10ns.zh,
+});
