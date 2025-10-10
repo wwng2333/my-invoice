@@ -10,6 +10,8 @@
 - 批量删除发票和下载附件
 - 发票状态筛选（pending, approved, rejected）和搜索
 - 总金额统计
+- 文件存储(本地/S3) (S3 需要在 Pocketbase Dashboard 中配置)
+- 自动备份(本地/S3) 
 - **快捷键支持**:
   - `Ctrl + A`: 全选/取消全选所有发票
   - `Esc`: 取消选中所有发票
