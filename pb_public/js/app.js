@@ -9,6 +9,7 @@ const loginSection    = $("loginSection");
 const mainSection     = $("mainSection");
 const logoutBtn       = $("logoutBtn");
 const currentUserSpan = $("currentUser");
+const currentAvatarImg = $("currentAvatar");
 const addInvoiceBtn   = $("addInvoiceBtn");
 const invoiceModal    = new bootstrap.Modal($("invoiceModal"));
 const modalTitle      = $("modalTitle");
@@ -61,6 +62,15 @@ function renderUI() {
     logoutBtn.style.display    = "";
     currentUserSpan.style.display = "";
     currentUserSpan.textContent = pb.authStore.model ? pb.authStore.model.email : "";
+    if(pb.authStore.model){
+      currentAvatarImg.style.display="";
+      if(pb.authStore.model.avatar){
+        currentAvatarImg.src = pb.files.getURL(pb.authStore.model, pb.authStore.model.avatar);
+      }else{
+        const nameEnc = encodeURIComponent(pb.authStore.model.email);
+        currentAvatarImg.src = `https://ui-avatars.com/api/?name=${nameEnc}&background=0D6EFD&color=ffffff&size=64`;
+      }
+    }
     // 初始化 itemsPerPage
     itemsPerPage = parseInt(itemsPerPageSelect.value) || 10;
     loadInvoices(undefined, undefined, currentPage, itemsPerPage);
@@ -102,6 +112,7 @@ function renderUI() {
     mainSection .style.display = "none";
     logoutBtn .style.display   = "none";
     currentUserSpan.style.display = "none";
+    currentAvatarImg.style.display = "none";
   }
 }
 renderUI();
