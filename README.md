@@ -27,7 +27,7 @@
 ```yaml
 services:
   my-invoice:
-    image: ghcr.io/wwng2333/my-invoice:latest
+    image: ghcr.io/wwng2333/my-invoice:main
     container_name: my-invoice
     restart: unless-stopped
     environment:
@@ -35,7 +35,7 @@ services:
       PB_PORT: 8090
       TZ: Asia/Shanghai
     ports:
-      - "5173:8090"
+      - "8090:8090"
     volumes:
       - ./pb_data:/app/pb_data
       - ./pb_migrations:/app/pb_migrations
