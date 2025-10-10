@@ -353,9 +353,10 @@ function openModal(rec){
 
       // 尝试识别发票号码，这里使用一个简单的正则表达式作为示例
       // 实际应用中可能需要更复杂的正则表达式或模式匹配
-      const invoiceNumberMatch = fullText.match(/发票号码[:：]?[\s\S]*?(\d{8,})/);
-      if (invoiceNumberMatch && invoiceNumberMatch[1]) {
-        $("invoiceNumber").value = invoiceNumberMatch[1];
+      // 优化发票号码识别逻辑：发票号码为20位纯数字
+      const invoiceNumberMatch = fullText.match(/\b\d{20}\b/);
+      if (invoiceNumberMatch) {
+        $("invoiceNumber").value = invoiceNumberMatch[0];
         alert("发票号码识别成功！");
       } else {
         alert("未能识别到发票号码，请手动输入。");
