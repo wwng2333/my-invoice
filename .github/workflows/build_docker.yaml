@@ -51,5 +51,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           # 使用分支名/tag 作为镜像标签，同时推送 latest
           tags: |
-            ghcr.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.GITHUB_REPOSITORY_NAME_PART }}:${{ env.GITHUB_REF_NAME }}
-            ghcr.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.GITHUB_REPOSITORY_NAME_PART }}:latest
+            ghcr.io/${{ github.repository_owner }}/${{ env.GITHUB_REPOSITORY_NAME_PART }}:${{ env.GITHUB_REF_NAME }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.GITHUB_REPOSITORY_NAME_PART }}:latest
