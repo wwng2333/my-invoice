@@ -19,7 +19,7 @@
 
 - **前端**: HTML, CSS (Bootstrap), JavaScript
 - **后端**: PocketBase (数据库、文件存储和 API)
-- **依赖**: Bootstrap, JSZip (用于 ZIP 下载), FileSaver.js (用于保存文件)
+- **依赖**: Bootstrap, JSZip (用于 ZIP 下载), FileSaver.js (用于保存文件), PDF.js (用于识别发票中的税号)
 
 ## 设置与运行
 
@@ -34,20 +34,7 @@
   ```
   默认地址： http://127.0.0.1:8090 。
 
-- 访问管理界面： http://127.0.0.1:8090/_/ ，创建用户并配置集合：
-  - 创建 invoices 集合，添加字段：
-    - invoice_number (text)
-    - invoice_date (date)
-    - vendor (text)
-    - amount (number)
-    - tax_amount (number, optional)
-    - status (select: pending, approved, rejected)
-    - description (text, optional)
-    - attachments (file, multiple)
-    - user (relation to users collection)
-  - 设置 API 规则：允许认证用户 CRUD 操作。
 ### 3. 运行
-- 将静态文件放在 pb_public 目录中（如果使用嵌入式部署）。
 - 通过 PocketBase 服务访问： http://127.0.0.1:8090/ 。
 
 ## 贡献
