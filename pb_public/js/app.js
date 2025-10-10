@@ -8,6 +8,7 @@ const loginForm       = $("loginForm");
 const loginSection    = $("loginSection");
 const mainSection     = $("mainSection");
 const logoutBtn       = $("logoutBtn");
+const currentUserSpan = $("currentUser");
 const addInvoiceBtn   = $("addInvoiceBtn");
 const invoiceModal    = new bootstrap.Modal($("invoiceModal"));
 const modalTitle      = $("modalTitle");
@@ -58,6 +59,8 @@ function renderUI() {
     loginSection.style.display = "none";
     mainSection .style.display = "";
     logoutBtn.style.display    = "";
+    currentUserSpan.style.display = "";
+    currentUserSpan.textContent = pb.authStore.model ? pb.authStore.model.email : "";
     // 初始化 itemsPerPage
     itemsPerPage = parseInt(itemsPerPageSelect.value) || 10;
     loadInvoices(undefined, undefined, currentPage, itemsPerPage);
@@ -98,6 +101,7 @@ function renderUI() {
     loginSection.style.display = "";
     mainSection .style.display = "none";
     logoutBtn .style.display   = "none";
+    currentUserSpan.style.display = "none";
   }
 }
 renderUI();
