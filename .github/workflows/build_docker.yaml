@@ -4,10 +4,16 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Pocketbase version'
+        required: false
+        default: '0.30.2'
 
 jobs:
   release:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -27,7 +33,7 @@ jobs:
 
       - name: Get version from needs or input
         id: version
-        run: echo "value=0.30.2" >> $GITHUB_OUTPUT
+        run: echo "value=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: meta
