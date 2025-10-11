@@ -33,7 +33,12 @@ jobs:
 
       - name: Get version from needs or input
         id: version
-        run: echo "value=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "value=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=0.30.2" >> $GITHUB_OUTPUT
+          fi
 
       - name: Docker meta
         id: meta
