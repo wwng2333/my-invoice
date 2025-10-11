@@ -174,7 +174,7 @@
     <!-- 主区 -->
     <div id="mainSection" style="display:none">
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <div class="pagination-controls-wrapper d-flex align-items-center gap-3">
+        <div id="paginationControlsWrapper" class="pagination-controls-wrapper d-flex align-items-center gap-3">
           <div class="d-flex align-items-center">
             <label for="itemsPerPageSelect" class="form-label mb-0 me-2">每页显示：</label>
             <select id="itemsPerPageSelect" class="form-select form-select-sm d-inline-block w-auto" style="vertical-align: middle;">
@@ -244,7 +244,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 id="modalTitle" class="modal-title">添加发票</h5>
-          <button class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="invoiceForm">
@@ -291,7 +291,7 @@
             <div class="modal-footer d-flex justify-content-between">
               <button type="button" class="btn btn-outline-primary" id="recognizeInvoiceNumberBtn"><i class="bi bi-search"></i> 识别发票号码</button>
               <div>
-                <button class="btn btn-secondary me-2" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">关闭</button>
                 <button id="saveInvoiceBtn" class="btn btn-primary" type="submit">保存</button>
               </div>
             </div>
