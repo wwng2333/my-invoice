@@ -10,11 +10,6 @@ on:
       - ".github/workflows/build_docker.yml"
   release:
     types: [created, published]
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to release"
-        required: true
 
 jobs:
   release:
