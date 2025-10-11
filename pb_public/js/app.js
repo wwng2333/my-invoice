@@ -369,6 +369,34 @@ function openModal(rec){
 
       console.log("提取到的 PDF 文本:", fullText); // 打印全部文本到控制台
 
+      // 尝试识别金额
+      // 优化金额识别逻辑：直接识别大写金额字符串，并取最后一个匹配项
+      const chineseAmountRegex = /([零壹贰叁肆伍陆柒捌玖拾佰仟万亿圆元角分整]+)/g;
+      const allChineseAmountMatches = [...fullText.matchAll(chineseAmountRegex)];
+      let amount = null;
+
+      if (allChineseAmountMatches.length > 0) {
+        const lastChineseAmountMatch = allChineseAmountMatches[allChineseAmountMatches.length - 1];
+        const chineseAmountStr = lastChineseAmountMatch[1];
+        console.log("识别到大写金额:", chineseAmountStr);
+        amount = convertChineseToNumber(chineseAmountStr);
+        console.log("转换后金额:", amount);
+        if (amount !== null) {
+          document.getElementById('amount').value = amount.toFixed(2);
+        }
+      } else {
+        console.log("未识别到大写金额。");
+        // Fallback to previous numerical amount recognition if Chinese amount not found
+        const amountRegex = /(?:小写|价税合计(?:（大写）)?)\s*[:：]?\s*.*?([¥$]?\s*\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/;
+        const amountMatch = fullText.match(amountRegex);
+        if (amountMatch && amountMatch[1]) {
+          amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+          console.log("识别到的金额 (fallback):", amount);
+        } else {
+          console.log("未识别到金额 (fallback)。");
+        }
+      }
+
       // 尝试识别发票号码，这里使用一个简单的正则表达式作为示例
       // 实际应用中可能需要更复杂的正则表达式或模式匹配
       // 优化发票号码识别逻辑：发票号码为20位纯数字
@@ -628,3 +656,64 @@ flatpickr("#invoiceDate", {
   dateFormat: "Y-m-d",
   locale: flatpickr.l10ns.zh,
 });
+
+// Helper function to convert Chinese capitalized numbers to numerical values
+function convertChineseToNumber(chineseStr) {
+  const chineseNumMap = {
+    '零': 0, '壹': 1, '贰': 2, '叁': 3, '肆': 4, '伍': 5, '陆': 6, '柒': 7, '捌': 8, '玖': 9
+  };
+  const chineseUnitMap = {
+    '拾': 10, '佰': 100, '仟': 1000, '万': 10000, '亿': 100000000
+  };
+
+  let result = 0;
+  let tempNum = 0;
+  let section = 0;
+  let hasDecimal = false;
+  let decimalPart = 0;
+  let decimalPlace = 0.1;
+
+  // Handle decimal part first if '角' or '分' exists
+  const decimalMatch = chineseStr.match(/(?:圆|元)(.*)/);
+  if (decimalMatch && decimalMatch[1]) {
+    const decimalStr = decimalMatch[1];
+    for (let i = 0; i < decimalStr.length; i++) {
+      const char = decimalStr[i];
+      if (char === '角') {
+        decimalPart += tempNum * 0.1;
+        tempNum = 0;
+      } else if (char === '分') {
+        decimalPart += tempNum * 0.01;
+        tempNum = 0;
+      } else if (chineseNumMap[char] !== undefined) {
+        tempNum = chineseNumMap[char];
+      }
+    }
+    chineseStr = chineseStr.substring(0, chineseStr.indexOf(decimalMatch[0]));
+    hasDecimal = true;
+  }
+
+  for (let i = 0; i < chineseStr.length; i++) {
+    const char = chineseStr[i];
+    if (chineseNumMap[char] !== undefined) {
+      tempNum = chineseNumMap[char];
+    } else if (chineseUnitMap[char] !== undefined) {
+      if (char === '万' || char === '亿') {
+        section = (section + tempNum) * chineseUnitMap[char];
+        result += section;
+        section = 0;
+        tempNum = 0;
+      } else {
+        section += tempNum * chineseUnitMap[char];
+        tempNum = 0;
+      }
+    } else if (char === '圆' || char === '元') {
+      result += section + tempNum;
+      section = 0;
+      tempNum = 0;
+    }
+  }
+  result += section + tempNum;
+
+  return result + decimalPart;
+}
