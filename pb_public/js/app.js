@@ -33,6 +33,7 @@ const paginationControls = $("paginationControls");
 const pagination      = $("pagination");
 const itemsPerPageSelect = $("itemsPerPageSelect");
 const recognizeInvoiceNumberBtn = $("recognizeInvoiceNumberBtn");
+const noInvoicesMessage = $("noInvoicesMessage");
 
 let selected = new Set();
 let totalAmount = 0;
@@ -142,7 +143,9 @@ async function loadInvoices(sortBy = "invoice_date", sortOrder = "desc", page = 
     });
     result.items.forEach(r => invoiceList.appendChild(cardEl(r)));
     if (result.items.length === 0) {
-      invoiceList.innerHTML = `<tr><td colspan="9" class="text-center py-4">暂无发票</td></tr>`;
+      noInvoicesMessage.style.display = "";
+    } else {
+      noInvoicesMessage.style.display = "none";
     }
     currentPage = result.page;
     totalPages = result.totalPages;
@@ -507,10 +510,12 @@ invoiceForm.addEventListener("submit", async (e) => {
             }
 
             await pb.collection("invoices").update(id, fd);
+            showToast("发票更新成功！", 'success');
 
         } else {
             // ----- 新建逻辑 -----
             await pb.collection("invoices").create(fd);
+            showToast("发票添加成功！", 'success');
         }
 
         saveInvoiceBtn.blur(); // 确保在模态框隐藏前移除焦点
@@ -528,7 +533,7 @@ invoiceForm.addEventListener("submit", async (e) => {
 /* ---------- 删除 ---------- */
 async function delInvoice(id){
   if(!confirm("确定删除?"))return;
-  try{await pb.collection("invoices").delete(id);loadInvoices();}
+  try{await pb.collection("invoices").delete(id);loadInvoices();showToast("发票删除成功！", 'success');}
   catch(e){showToast("删除失败：" + e.message, 'danger');}
 }
 
