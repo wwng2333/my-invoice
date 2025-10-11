@@ -39,7 +39,7 @@ jobs:
 
       - name: Get version from needs or input
         id: version
-        run: echo "value=${{ github.event.inputs.version || needs.check.outputs.pocketbase }}" >> $GITHUB_OUTPUT
+        run: echo "value=0.30.2" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: meta
