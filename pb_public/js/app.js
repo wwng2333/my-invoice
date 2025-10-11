@@ -11,7 +11,6 @@ const logoutBtn       = $("logoutBtn");
 const currentUserSpan = $("currentUser");
 const currentAvatarImg = $("currentAvatar");
 const addInvoiceBtn   = $("addInvoiceBtn");
-const invoiceModal    = new bootstrap.Modal($("invoiceModal"));
 const modalTitle      = $("modalTitle");
 const invoiceForm     = $("invoiceForm");
 const saveInvoiceBtn  = $("saveInvoiceBtn");
@@ -29,12 +28,19 @@ const selectAllCheckbox = $("selectAllCheckbox");
 const batchStatusSelect = $("batchStatusSelect");
 const batchSetStatusBtn = $("batchSetStatusBtn");
 let attachments       = $("attachments");
-const paginationControls = $("paginationControls");
+let paginationControls; // 声明为let
 const pagination      = $("pagination");
 const itemsPerPageSelect = $("itemsPerPageSelect");
 const recognizeInvoiceNumberBtn = $("recognizeInvoiceNumberBtn");
 const noInvoicesMessage = $("noInvoicesMessage");
-const confirmDeleteModal = new bootstrap.Modal($("confirmDeleteModal"));
+// 将模态框的初始化移动到 DOMContentLoaded 事件中
+let invoiceModal; // 声明为let
+let confirmDeleteModal;
+document.addEventListener("DOMContentLoaded", () => {
+  invoiceModal = new bootstrap.Modal($("invoiceModal")); // 在DOMContentLoaded中初始化
+  confirmDeleteModal = new bootstrap.Modal($("confirmDeleteModal"));
+  paginationControls = $("paginationControlsWrapper"); // 在DOMContentLoaded中初始化
+});
 const confirmDeleteBtn = $("confirmDeleteBtn");
 
 let selected = new Set();
@@ -333,7 +339,8 @@ function updateTotalAmountDisplay() {
 }
 
 /* ---------- 搜索过滤监听 ---------- */
-[searchInput,statusFilter].forEach(el=>el.oninput=debounce(() => { currentPage = 1; loadInvoices(); },300));
+searchInput.oninput = debounce(() => { currentPage = 1; loadInvoices(); }, 300);
+statusFilter.onchange = debounce(() => { currentPage = 1; loadInvoices(); }, 300);
 function debounce(fn,ms){let t;return ()=>{clearTimeout(t);t=setTimeout(fn,ms);}}
 
 /* ---------- 新增 / 编辑 ---------- */
