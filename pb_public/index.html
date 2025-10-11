@@ -242,6 +242,15 @@
     <!-- Toast messages will be appended here -->
   </div>
 
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const appScript = document.querySelector('script[src="js/app.js"]');
+      if (appScript) {
+        const version = new Date().getTime();
+        appScript.src = `js/app.js?v=${version}`;
+      }
+    });
+  </script>
   <!-- 业务脚本 -->
   <script type="module" src="js/app.js" crossorigin="anonymous"></script>
 </body>
