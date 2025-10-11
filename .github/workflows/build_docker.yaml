@@ -3,11 +3,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "Dockerfile"
-      - "pb_public/**"
-      - "pb_migrations/**"
-      - ".github/workflows/build_docker.yml"
   release:
     types: [created, published]
 
