@@ -33,6 +33,29 @@
       overflow-y: auto;
       max-height: 70vh; /* Adjust as needed for desired scrollable height */
     }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .table thead th:nth-child(7), /* 描述 */
+      .table tbody td:nth-child(7),
+      .table thead th:nth-child(8), /* 附件 */
+      .table tbody td:nth-child(8) {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      #currentUser {
+        display: none !important;
+      }
+
+      #batchStatusSelect,
+      #batchActions span,
+      #addInvoiceBtn span,
+      #logoutBtn span {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -43,7 +66,7 @@
       <div class="d-flex ms-auto align-items-center">
         <img id="currentAvatar" class="rounded-circle me-2" style="width:32px;height:32px;display:none" alt="avatar">
          <span id="currentUser" class="text-light me-3" style="display:none"></span>
-        <button id="logoutBtn" class="btn btn-outline-light" style="display:none"><i class="bi bi-box-arrow-right"></i> 退出</button>
+        <button id="logoutBtn" class="btn btn-outline-light" style="display:none"><i class="bi bi-box-arrow-right"></i> <span>退出</span></button>
       </div>
     </div>
   </nav>
@@ -75,7 +98,6 @@
     <div id="mainSection" style="display:none">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="d-flex align-items-center">
-          <h2 class="mb-0 me-3">我的发票</h2>
           <!-- 分页控件 -->
           <div id="paginationControls" class="d-flex align-items-center gap-3">
             <div class="me-3">
@@ -94,13 +116,13 @@
             </nav>
           </div>
         </div>
-        <button class="btn btn-primary" id="addInvoiceBtn"><i class="bi bi-plus-circle-fill"></i> 添加发票</button>
+        <button class="btn btn-primary" id="addInvoiceBtn"><i class="bi bi-plus-circle-fill"></i> <span>添加发票</span></button>
       </div>
 
       <!-- 搜索过滤 -->
       <div class="row mb-3">
-        <div class="col-md-8"><input id="searchInput" class="form-control" placeholder="按发票号、供应商或描述搜索..."></div>
-        <div class="col-md-4">
+        <div class="col-6 col-md-8"><input id="searchInput" class="form-control" placeholder="按发票号、供应商或描述搜索..."></div>
+        <div class="col-6 col-md-4">
           <select id="statusFilter" class="form-select">
             <option value="">所有状态</option>
             <option value="pending">待处理</option>
@@ -130,6 +152,11 @@
           <tbody id="invoiceList">
             <!-- 发票行将在这里动态加载 -->
           </tbody>
+          <tfoot id="noInvoicesMessage" style="display: none;">
+            <tr>
+              <td colspan="9" class="text-center py-3 text-muted">暂无发票数据</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
       <div id="loading" class="text-center mt-5" style="display:none">
@@ -191,10 +218,10 @@
       <option value="approved">已批准</option>
       <option value="rejected">已拒绝</option>
     </select>
-    <button id="batchSetStatusBtn" class="btn btn-warning me-2"><i class="bi bi-arrow-repeat"></i> 设置状态</button>
-    <button id="batchDeleteBtn" class="btn btn-danger"><i class="bi bi-trash-fill"></i> 删除</button>
-    <button id="batchDownloadBtn" class="btn btn-info"><i class="bi bi-download"></i> 下载</button>
-    <button id="deselectAllBtn" class="btn btn-secondary"><i class="bi bi-x-circle"></i> 取消</button>
+    <button id="batchSetStatusBtn" class="btn btn-warning me-2"><i class="bi bi-arrow-repeat"></i> <span>设置状态</span></button>
+    <button id="batchDeleteBtn" class="btn btn-danger"><i class="bi bi-trash-fill"></i> <span>删除</span></button>
+    <button id="batchDownloadBtn" class="btn btn-info"><i class="bi bi-download"></i> <span>下载</span></button>
+    <button id="deselectAllBtn" class="btn btn-secondary"><i class="bi bi-x-circle"></i> <span>取消</span></button>
   </div>
 
   <!-- 依赖 -->
