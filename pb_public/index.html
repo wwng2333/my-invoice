@@ -55,6 +55,83 @@
       #logoutBtn span {
         display: none !important;
       }
+      
+      .pagination-controls-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .pagination-controls-wrapper > div:first-child {
+        margin-bottom: 10px;
+      }
+    }
+    
+    /* Enhanced styles for better UX */
+    .navbar-brand {
+      font-weight: 600;
+    }
+    
+    .card {
+      border-radius: 10px;
+    }
+    
+    .btn-group.batch-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .batch-info-btn {
+      border-radius: 50px;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      min-width: 40px;
+      min-height: 40px;
+    }
+    
+    .search-controls {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .search-controls > div {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .invoice-actions .btn {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+    }
+    
+    .attachment-preview {
+      max-height: 100px;
+      overflow-y: auto;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    
+    .status-badge {
+      font-weight: 500;
+      padding: 0.35em 0.65em;
+    }
+    
+    .table th {
+      font-weight: 600;
+      color: #495057;
+    }
+    
+    .sort-indicator {
+      opacity: 0.7;
+      margin-left: 0.25rem;
+    }
+    
+    .sort-active .sort-indicator {
+      opacity: 1;
+      color: #0d6efd;
     }
   </style>
 </head>
@@ -96,33 +173,30 @@
 
     <!-- 主区 -->
     <div id="mainSection" style="display:none">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="d-flex align-items-center">
-          <!-- 分页控件 -->
-          <div id="paginationControls" class="d-flex align-items-center gap-3">
-            <div class="me-3">
-              <label for="itemsPerPageSelect" class="form-label mb-0">每页显示：</label>
-              <select id="itemsPerPageSelect" class="form-select form-select-sm d-inline-block w-auto" style="vertical-align: middle;">
-                <option value="10">10</option>
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-                <option value="9999">全部</option>
-              </select>
-            </div>
-            <nav aria-label="Page navigation">
-              <ul id="pagination" class="pagination mb-0" style="vertical-align: middle;">
-                <!-- Pagination links will be injected here by JavaScript -->
-              </ul>
-            </nav>
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="pagination-controls-wrapper d-flex align-items-center gap-3">
+          <div class="d-flex align-items-center">
+            <label for="itemsPerPageSelect" class="form-label mb-0 me-2">每页显示：</label>
+            <select id="itemsPerPageSelect" class="form-select form-select-sm d-inline-block w-auto" style="vertical-align: middle;">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="9999">全部</option>
+            </select>
           </div>
+          <nav aria-label="Page navigation">
+            <ul id="pagination" class="pagination mb-0" style="vertical-align: middle;">
+              <!-- Pagination links will be injected here by JavaScript -->
+            </ul>
+          </nav>
         </div>
-        <button class="btn btn-primary" id="addInvoiceBtn"><i class="bi bi-plus-circle-fill"></i> <span>添加发票</span></button>
+        <button class="btn btn-primary d-flex align-items-center" id="addInvoiceBtn"><i class="bi bi-plus-circle-fill me-1"></i> <span>添加发票</span></button>
       </div>
 
       <!-- 搜索过滤 -->
-      <div class="row mb-3">
-        <div class="col-6 col-md-8"><input id="searchInput" class="form-control" placeholder="按发票号、供应商或描述搜索..."></div>
-        <div class="col-6 col-md-4">
+      <div class="search-controls mb-3">
+        <div><input id="searchInput" class="form-control" placeholder="按发票号、供应商或描述搜索..."></div>
+        <div>
           <select id="statusFilter" class="form-select">
             <option value="">所有状态</option>
             <option value="pending">待处理</option>
@@ -137,16 +211,15 @@
         <table class="table table-hover align-middle">
           <thead>
             <tr>
-              <th scope="col"><input type="checkbox" id="selectAllCheckbox"></th>
-              <th scope="col" id="sortInvoiceNumber" data-sort-by="invoice_number" data-sort-order="asc" style="cursor: pointer;">发票号 <i class="bi bi-sort-alpha-down"></i></th>
-              <th scope="col" id="sortInvoiceDate" data-sort-by="invoice_date" data-sort-order="desc" style="cursor: pointer;">日期 <i class="bi bi-sort-alpha-down"></i></th>
-              <th scope="col" id="sortVendor" data-sort-by="vendor" data-sort-order="asc" style="cursor: pointer;">供应商 <i class="bi bi-sort-alpha-down"></i></th>
-              <th scope="col" id="sortAmount" data-sort-by="amount" data-sort-order="asc" style="cursor: pointer;">金额 <i class="bi bi-sort-numeric-down"></i></th>
-
-              <th scope="col" id="sortStatus" data-sort-by="status" data-sort-order="asc" style="cursor: pointer;">状态 <i class="bi bi-sort-alpha-down"></i></th>
-              <th scope="col">描述</th>
-              <th scope="col">附件</th>
-              <th scope="col">操作</th>
+              <th scope="col" style="width: 30px;"><input type="checkbox" id="selectAllCheckbox"></th>
+              <th scope="col" id="sortInvoiceNumber" data-sort-by="invoice_number" data-sort-order="asc" style="cursor: pointer; min-width: 120px;">发票号 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
+              <th scope="col" id="sortInvoiceDate" data-sort-by="invoice_date" data-sort-order="desc" style="cursor: pointer; width: 120px;">日期 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
+              <th scope="col" id="sortVendor" data-sort-by="vendor" data-sort-order="asc" style="cursor: pointer; min-width: 120px;">供应商 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
+              <th scope="col" id="sortAmount" data-sort-by="amount" data-sort-order="asc" style="cursor: pointer; width: 120px;">金额 <i class="bi bi-sort-numeric-down sort-indicator"></i></th>
+              <th scope="col" id="sortStatus" data-sort-by="status" data-sort-order="asc" style="cursor: pointer; width: 100px;">状态 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
+              <th scope="col" style="min-width: 150px;">描述</th>
+              <th scope="col" style="width: 100px;">附件</th>
+              <th scope="col" style="width: 120px;">操作</th>
             </tr>
           </thead>
           <tbody id="invoiceList">
@@ -177,12 +250,28 @@
           <form id="invoiceForm">
             <input type="hidden" id="invoiceId">
             <div class="row">
-              <div class="col-md-6 mb-3"><input id="invoiceNumber" name="invoice_number" class="form-control" placeholder="发票号码" required></div>
-              <div class="col-md-6 mb-3"><input id="invoiceDate" name="invoice_date" type="text" class="form-control" placeholder="选择日期" required></div>
-              <div class="col-md-6 mb-3"><input id="vendor" name="vendor" class="form-control" placeholder="供应商" required></div>
-              <div class="col-md-6 mb-3"><input id="amount" name="amount" type="number" step="0.01" class="form-control" placeholder="金额" required></div>
-              <div class="col-md-6 mb-3"><input id="taxAmount" name="tax_amount" type="number" step="0.01" class="form-control" placeholder="税额"></div>
               <div class="col-md-6 mb-3">
+                <label for="invoiceNumber" class="form-label">发票号码</label>
+                <input id="invoiceNumber" name="invoice_number" class="form-control" placeholder="发票号码" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="invoiceDate" class="form-label">日期</label>
+                <input id="invoiceDate" name="invoice_date" type="text" class="form-control" placeholder="选择日期" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="vendor" class="form-label">供应商</label>
+                <input id="vendor" name="vendor" class="form-control" placeholder="供应商" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="amount" class="form-label">金额</label>
+                <input id="amount" name="amount" type="number" step="0.01" class="form-control" placeholder="金额" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="taxAmount" class="form-label">税额</label>
+                <input id="taxAmount" name="tax_amount" type="number" step="0.01" class="form-control" placeholder="税额">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="status" class="form-label">状态</label>
                 <select id="status" name="status" class="form-select">
                   <option value="pending">待处理</option>
                   <option value="approved">已批准</option>
@@ -190,26 +279,53 @@
                 </select>
               </div>
             </div>
-            <textarea id="description" name="description" class="form-control mb-3" placeholder="描述"></textarea>
-            <label class="form-label">附件 (PDF)</label>
-            <input id="attachments" name="attachments" type="file" accept=".pdf" multiple class="form-control mb-2">
-            <div id="attachmentPreview" class="small"></div>
-          <div class="modal-footer d-flex justify-content-end">
-            <button type="button" class="btn btn-secondary me-2" id="recognizeInvoiceNumberBtn"><i class="bi bi-search"></i> 识别发票号码</button>
-            <button class="btn btn-secondary me-2" data-bs-dismiss="modal">关闭</button>
-            <button id="saveInvoiceBtn" class="btn btn-primary" type="submit">保存</button>
-          </div>
+            <div class="mb-3">
+              <label for="description" class="form-label">描述</label>
+              <textarea id="description" name="description" class="form-control" placeholder="描述" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">附件 (PDF)</label>
+              <input id="attachments" name="attachments" type="file" accept=".pdf" multiple class="form-control">
+              <div id="attachmentPreview" class="attachment-preview mt-2"></div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+              <button type="button" class="btn btn-outline-primary" id="recognizeInvoiceNumberBtn"><i class="bi bi-search"></i> 识别发票号码</button>
+              <div>
+                <button class="btn btn-secondary me-2" data-bs-dismiss="modal">关闭</button>
+                <button id="saveInvoiceBtn" class="btn btn-primary" type="submit">保存</button>
+              </div>
+            </div>
           </form>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- 确认删除模态框 -->
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmDeleteModalLabel">确认删除</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          您确定要删除此发票吗？此操作不可撤销。
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">确认删除</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 批量操作悬浮按钮 -->
-  <div id="batchTotalAmount" class="btn btn-light shadow-lg" style="position:fixed;bottom:75px;right:20px;z-index:1050;display:none;">
+  <div id="batchTotalAmount" class="btn btn-light shadow-lg batch-info-btn" style="position:fixed;bottom:130px;right:20px;z-index:1050;display:none;">
+    <i class="bi bi-currency-dollar"></i> <span id="totalAmountValue">0.00</span>
   </div>
-  <div id="batchCount" class="btn btn-light shadow-lg" style="position:fixed;bottom:120px;right:20px;z-index:1050;display:none;">
-  </div>
+  <div id="batchCount" class="btn btn-light shadow-lg batch-info-btn" style="position:fixed;bottom:80px;right:20px;z-index:1050;display:none;">
+    <i class="bi bi-check-square"></i> <span id="selectedCount">0</span>
   </div>
   <div id="batchActions" class="btn-group shadow-lg">
     <select id="batchStatusSelect" class="form-select me-2" style="width: auto;">
@@ -218,10 +334,10 @@
       <option value="approved">已批准</option>
       <option value="rejected">已拒绝</option>
     </select>
-    <button id="batchSetStatusBtn" class="btn btn-warning me-2"><i class="bi bi-arrow-repeat"></i> <span>设置状态</span></button>
-    <button id="batchDeleteBtn" class="btn btn-danger"><i class="bi bi-trash-fill"></i> <span>删除</span></button>
-    <button id="batchDownloadBtn" class="btn btn-info"><i class="bi bi-download"></i> <span>下载</span></button>
-    <button id="deselectAllBtn" class="btn btn-secondary"><i class="bi bi-x-circle"></i> <span>取消</span></button>
+    <button id="batchSetStatusBtn" class="btn btn-warning d-flex align-items-center"><i class="bi bi-arrow-repeat me-1"></i> <span>设置状态</span></button>
+    <button id="batchDeleteBtn" class="btn btn-danger d-flex align-items-center"><i class="bi bi-trash-fill me-1"></i> <span>删除</span></button>
+    <button id="batchDownloadBtn" class="btn btn-info d-flex align-items-center"><i class="bi bi-download me-1"></i> <span>下载</span></button>
+    <button id="deselectAllBtn" class="btn btn-secondary d-flex align-items-center"><i class="bi bi-x-circle me-1"></i> <span>取消</span></button>
   </div>
 
   <!-- 依赖 -->
