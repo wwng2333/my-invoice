@@ -162,18 +162,27 @@ function renderPagination(totalItems) {
   }
 
   pagination.innerHTML = ""; // 清空现有分页
-  if (totalPages <= 1) {
-    paginationControls.style.display = "none";
-    return;
+
+  // Display total record count and items per page in one每页显示 label
+  const itemsPerPageLabel = paginationControls.querySelector('label[for="itemsPerPageSelect"]');
+  if (itemsPerPageLabel) {
+    itemsPerPageLabel.textContent = `共 ${totalItems} 条记录，每页显示：`;
   }
 
-  paginationControls.style.display = "flex";
+  // Determine overall paginationControls visibility (contains total records and items per page select)
+  if (totalItems > 0 || totalPages > 1) {
+    paginationControls.style.display = "flex";
+  } else {
+    paginationControls.style.display = "none";
+  }
 
-  // Display total record count
-  const totalRecordsSpan = document.createElement("span");
-  totalRecordsSpan.className = "total-records-info";
-  totalRecordsSpan.textContent = `共 ${totalItems} 条记录`;
-  paginationControls.appendChild(totalRecordsSpan);
+  // Determine pagination links visibility
+  if (totalPages <= 1) {
+    pagination.style.display = "none"; // Hide pagination links if only one page
+    return; // Exit early as no pagination links are needed
+  } else {
+    pagination.style.display = "flex"; // Show pagination links if more than one page
+  }
 
   // 上一页按钮
   const prevItem = document.createElement("li");
