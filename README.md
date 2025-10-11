@@ -38,7 +38,6 @@ services:
       - "8090:8090"
     volumes:
       - ./pb_data:/app/pb_data
-      - ./pb_migrations:/app/pb_migrations
     healthcheck:
       test:
         [
