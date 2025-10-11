@@ -50,7 +50,9 @@ loginForm.addEventListener("submit", async e => {
   try {
     await pb.collection("users").authWithPassword(email, pass);
     renderUI();
-  } catch (err) { alert("登录失败：" + err.message); }
+  } catch (err) {
+    showToast("登录失败：" + err.message, 'danger');
+  }
 });
 logoutBtn.onclick = () => { pb.authStore.clear(); renderUI(); };
 
@@ -145,7 +147,9 @@ async function loadInvoices(sortBy = "invoice_date", sortOrder = "desc", page = 
     currentPage = result.page;
     totalPages = result.totalPages;
     renderPagination();
-  } catch (e) { alert("加载失败：" + e.message); }
+  } catch (e) {
+      showToast("加载失败：" + e.message, 'danger');
+    }
   loading.style.display = "none";
 }
 
@@ -339,11 +343,11 @@ function openModal(rec){
   recognizeInvoiceNumberBtn.onclick = async () => {
     const files = attachments.files;
     if (files.length === 0) {
-      alert("请先选择 PDF 附件！");
+      showToast("请选择 PDF 文件！", 'warning');
       return;
     }
     if (files.length > 1) {
-      alert("目前只支持识别单个 PDF 文件的发票号码。");
+      showToast("目前只支持识别单个 PDF 文件的发票号码。", 'warning');
       return;
     }
 
@@ -403,14 +407,14 @@ function openModal(rec){
       const invoiceNumberMatch = fullText.match(/\b\d{20}\b/);
       if (invoiceNumberMatch) {
         $("invoiceNumber").value = invoiceNumberMatch[0];
-        alert("发票号码识别成功！");
+        showToast("发票号码识别成功！", 'success');
       } else {
-        alert("未能识别到发票号码，请手动输入。");
+        showToast("未能识别到发票号码，请手动输入。", 'warning');
       }
 
     } catch (error) {
       console.error("识别发票号码时出错:", error);
-      alert("识别发票号码时出错: " + error.message);
+      showToast("识别发票号码时出错: " + error.message, 'danger');
     }
   };
 }
@@ -495,7 +499,7 @@ invoiceForm.addEventListener("submit", async (e) => {
         console.log("Invoice saved successfully.");
     } catch (e) {
         console.error("Error saving invoice:", e);
-        alert("保存失败：" + e.message);
+        showToast("保存失败：" + e.message, 'danger');
     }
 });
 
@@ -503,7 +507,7 @@ invoiceForm.addEventListener("submit", async (e) => {
 async function delInvoice(id){
   if(!confirm("确定删除?"))return;
   try{await pb.collection("invoices").delete(id);loadInvoices();}
-  catch(e){alert("删除失败："+e.message);}
+  catch(e){showToast("删除失败：" + e.message, 'danger');}
 }
 
 /* ---------- 批量删除 ---------- */
@@ -518,7 +522,7 @@ batchDeleteBtn.onclick = async ()=>{
 batchSetStatusBtn.onclick = async () => {
   const newStatus = batchStatusSelect.value;
   if (!newStatus) {
-    alert("请选择一个状态！");
+    showToast("请选择一个状态！", 'warning');
     return;
   }
   if (!selected.size || !confirm(`确定将选中 ${selected.size} 条发票状态设置为 "${newStatus}"?`)) return;
@@ -533,7 +537,7 @@ batchSetStatusBtn.onclick = async () => {
     loadInvoices();
     batchStatusSelect.value = ""; // 重置选择框
   } catch (e) {
-    alert("批量设置状态失败：" + e.message);
+    showToast("批量设置状态失败：" + e.message, 'danger');
   }
   loading.style.display = "none";
 };
@@ -717,3 +721,35 @@ function convertChineseToNumber(chineseStr) {
 
   return result + decimalPart;
 }
+
+  // Helper function to show Bootstrap Toasts
+  function showToast(message, type = 'info') {
+    const toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+      console.error('Toast container not found!');
+      // Fallback to a simple console log or no action if toast container is missing
+      // alert(message); // Removed fallback alert
+      return;
+    }
+
+    const toastId = `toast-${Date.now()}`;
+    const toastHtml = `
+      <div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">
+            ${message}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    `;
+
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastEl = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+
+    toastEl.addEventListener('hidden.bs.toast', () => {
+      toastEl.remove();
+    });
+  }
