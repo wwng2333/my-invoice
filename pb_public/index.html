@@ -16,7 +16,23 @@
     .invoice-card:hover{transform:translateY(-4px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
     .invoice-card.selected{background:#d0eaff!important;border-color:#0d6efd!important}
     #batchActions{position:fixed;bottom:20px;right:20px;z-index:1050;display:none}
-    .total-records-info { margin-left: 15px; font-weight: bold; color: #6c757d; }
+
+    /* Custom table styles */
+    .table th, .table td {
+      padding: 0.75rem;
+      vertical-align: middle;
+    }
+    .table thead th {
+      position: sticky;
+      top: 0;
+      background-color: #f8f9fa; /* Match body background or a slightly different shade */
+      z-index: 10;
+      box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+    }
+    .table-responsive {
+      overflow-y: auto;
+      max-height: 70vh; /* Adjust as needed for desired scrollable height */
+    }
   </style>
 </head>
 <body>
@@ -61,18 +77,18 @@
         <div class="d-flex align-items-center">
           <h2 class="mb-0 me-3">我的发票</h2>
           <!-- 分页控件 -->
-          <div id="paginationControls" class="d-flex align-items-center">
+          <div id="paginationControls" class="d-flex align-items-center gap-3">
             <div class="me-3">
-              <label for="itemsPerPageSelect" class="form-label mb-0">每页显示:</label>
-              <select id="itemsPerPageSelect" class="form-select form-select-sm d-inline-block w-auto">
-                <option value="10" selected>10</option>
-                <option value="25">25</option>
+              <label for="itemsPerPageSelect" class="form-label mb-0">每页显示：</label>
+              <select id="itemsPerPageSelect" class="form-select form-select-sm d-inline-block w-auto" style="vertical-align: middle;">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
                 <option value="50">50</option>
                 <option value="9999">全部</option>
               </select>
             </div>
             <nav aria-label="Page navigation">
-              <ul id="pagination" class="pagination mb-0">
+              <ul id="pagination" class="pagination mb-0" style="vertical-align: middle;">
                 <!-- Pagination links will be injected here by JavaScript -->
               </ul>
             </nav>
