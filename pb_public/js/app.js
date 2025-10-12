@@ -40,6 +40,11 @@ document.addEventListener("DOMContentLoaded", () => {
   invoiceModal = new bootstrap.Modal($("invoiceModal")); // 在DOMContentLoaded中初始化
   confirmDeleteModal = new bootstrap.Modal($("confirmDeleteModal"));
   paginationControls = $("paginationControlsWrapper"); // 在DOMContentLoaded中初始化
+
+  // 当发票模态框隐藏时，重新启用 Ctrl+A 监听
+  invoiceModal._element.addEventListener('hidden.bs.modal', () => {
+    document.addEventListener("keydown", handleCtrlA);
+  });
 });
 const confirmDeleteBtn = $("confirmDeleteBtn");
 
@@ -346,6 +351,7 @@ function debounce(fn,ms){let t;return ()=>{clearTimeout(t);t=setTimeout(fn,ms);}
 /* ---------- 新增 / 编辑 ---------- */
 addInvoiceBtn.onclick = ()=>openModal();
 function openModal(rec){
+  document.removeEventListener("keydown", handleCtrlA); // 移除 Ctrl+A 监听
   invoiceForm.reset();
   // 克隆并替换文件输入框，以确保其完全重置
     const oldAttachments = attachments;
@@ -529,6 +535,7 @@ invoiceForm.addEventListener("submit", async (e) => {
 
         saveInvoiceBtn.blur(); // 确保在模态框隐藏前移除焦点
         invoiceModal.hide();
+        document.addEventListener("keydown", handleCtrlA); // 恢复 Ctrl+A 监听
         currentAttachments = []; // 清空 currentAttachments
         currentRecord = null; // 清空 currentRecord
         loadInvoices();
@@ -632,6 +639,7 @@ confirmDeleteBtn.addEventListener('click', async () => {
   }
   loading.style.display = "none";
   confirmDeleteModal.hide();
+  document.addEventListener("keydown", handleCtrlA); // 恢复 Ctrl+A 监听
 });  if (invoicesData.length > 0) {
     const headers = Object.keys(invoicesData[0]);
     const csvContent = [headers.join(","), ...invoicesData.map(row => headers.map(fieldName => JSON.stringify(row[fieldName])).join(","))].join("\n");
@@ -656,23 +664,36 @@ deselectAllBtn.onclick = ()=>{
 };
 
 /* ---------- 全选 ---------- */
-// 监听 Ctrl+A 快捷键
-document.addEventListener("keydown", (e) => {
+// 定义 Ctrl+A 处理函数（可复用）
+const handleCtrlA = (e) => {
   if (e.ctrlKey && e.key === "a") {
-    e.preventDefault(); // 阻止浏览器默认的 Ctrl+A 行为
+    e.preventDefault(); 
     const allCheckboxes = document.querySelectorAll(".row-select-checkbox");
     const allInvoicesSelected = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
 
     if (allInvoicesSelected) {
-      // 如果所有发票都已选中，则取消全选
       deselectAllBtn.click();
     } else {
-      // 否则，选中所有发票
       selectAllCheckbox.checked = true;
-      selectAllCheckbox.onchange(); // 手动触发 change 事件
+      selectAllCheckbox.onchange();
     }
   }
-});
+};
+
+// 初始绑定 Ctrl+A 监听
+document.addEventListener("keydown", handleCtrlA);
+
+// 对话框打开时移除监听（假设对话框打开函数为 openInvoiceDialog）
+function openInvoiceDialog() {
+  document.removeEventListener("keydown", handleCtrlA);
+  // 原对话框打开逻辑...
+}
+
+// 对话框关闭时恢复监听（假设对话框关闭函数为 closeInvoiceDialog）
+function closeInvoiceDialog() {
+  document.addEventListener("keydown", handleCtrlA);
+  // 原对话框关闭逻辑...
+}
 
 // 监听 ESC 键取消选中
 document.addEventListener("keydown", (e) => {
