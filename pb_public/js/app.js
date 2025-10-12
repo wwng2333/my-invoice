@@ -417,12 +417,20 @@ function openModal(rec){
       // 优化金额识别逻辑：直接识别大写金额字符串，并取最后一个匹配项
       const chineseAmountRegex = /([零壹贰叁肆伍陆柒捌玖拾佰仟万亿圆元角分整]+)/g;
       const allChineseAmountMatches = [...fullText.matchAll(chineseAmountRegex)];
+      console.log('allChineseAmountMatches:', allChineseAmountMatches);
       let amount = null;
 
       if (allChineseAmountMatches.length > 0) {
-        const lastChineseAmountMatch = allChineseAmountMatches[allChineseAmountMatches.length - 1];
-        const chineseAmountStr = lastChineseAmountMatch[1];
-        console.log("识别到大写金额:", chineseAmountStr);
+        let chineseAmountStr = '';
+        if (allChineseAmountMatches.length > 1) {
+          // 如果有多个匹配结果，选择长度最长的一个
+          chineseAmountStr = allChineseAmountMatches.reduce((prev, current) => {
+            return (prev[1].length > current[1].length) ? prev : current;
+          })[1];
+        } else {
+          chineseAmountStr = allChineseAmountMatches[0][1];
+        }
+        console.log('选定的中文金额字符串:', chineseAmountStr);
         amount = convertChineseToNumber(chineseAmountStr);
         console.log("转换后金额:", amount);
         if (amount !== null) {
@@ -755,32 +763,55 @@ function convertChineseToNumber(chineseStr) {
   let result = 0;
   let tempNum = 0;
   let section = 0;
-  let hasDecimal = false;
   let decimalPart = 0;
-  let decimalPlace = 0.1;
 
-  // Handle decimal part first if '角' or '分' exists
-  const decimalMatch = chineseStr.match(/(?:圆|元)(.*)/);
-  if (decimalMatch && decimalMatch[1]) {
-    const decimalStr = decimalMatch[1];
-    for (let i = 0; i < decimalStr.length; i++) {
-      const char = decimalStr[i];
-      if (char === '角') {
-        decimalPart += tempNum * 0.1;
-        tempNum = 0;
-      } else if (char === '分') {
-        decimalPart += tempNum * 0.01;
-        tempNum = 0;
-      } else if (chineseNumMap[char] !== undefined) {
-        tempNum = chineseNumMap[char];
-      }
-    }
-    chineseStr = chineseStr.substring(0, chineseStr.indexOf(decimalMatch[0]));
-    hasDecimal = true;
+  let integerPartStr = chineseStr;
+  let decimalPartStr = '';
+
+  // Find the split point for integer and decimal parts
+  const yuanIndex = chineseStr.indexOf('圆');
+  const yuanAltIndex = chineseStr.indexOf('元');
+
+  let splitIndex = -1;
+  if (yuanIndex !== -1 && (yuanAltIndex === -1 || yuanIndex < yuanAltIndex)) {
+    splitIndex = yuanIndex;
+  } else if (yuanAltIndex !== -1) {
+    splitIndex = yuanAltIndex;
   }
 
-  for (let i = 0; i < chineseStr.length; i++) {
-    const char = chineseStr[i];
+  if (splitIndex !== -1) {
+    integerPartStr = chineseStr.substring(0, splitIndex);
+    decimalPartStr = chineseStr.substring(splitIndex + 1); // +1 to skip '圆' or '元'
+    console.log('整数部分字符串:', integerPartStr);
+    console.log('小数部分字符串:', decimalPartStr);
+  }
+
+  // Handle decimal part
+  if (decimalPartStr) {
+    if (decimalPartStr === '整') {
+      decimalPart = 0; // '整' means no fractional part
+    } else {
+      let currentDecimalNum = 0;
+      for (let i = 0; i < decimalPartStr.length; i++) {
+        const char = decimalPartStr[i];
+        if (char === '角') {
+          decimalPart += currentDecimalNum * 0.1;
+          currentDecimalNum = 0;
+        } else if (char === '分') {
+          decimalPart += currentDecimalNum * 0.01;
+          currentDecimalNum = 0;
+        } else if (chineseNumMap[char] !== undefined) {
+          currentDecimalNum = chineseNumMap[char];
+        } else {
+          throw new Error(`无效的小数部分字符: ${char} 在小数部分`);
+        }
+      }
+    }
+  }
+
+  // Process the integer part
+  for (let i = 0; i < integerPartStr.length; i++) {
+    const char = integerPartStr[i];
     if (chineseNumMap[char] !== undefined) {
       tempNum = chineseNumMap[char];
     } else if (chineseUnitMap[char] !== undefined) {
@@ -793,13 +824,12 @@ function convertChineseToNumber(chineseStr) {
         section += tempNum * chineseUnitMap[char];
         tempNum = 0;
       }
-    } else if (char === '圆' || char === '元') {
-      result += section + tempNum;
-      section = 0;
-      tempNum = 0;
+    }
+    else {
+      throw new Error(`无效的整数部分字符: ${char} 在整数部分`);
     }
   }
-  result += section + tempNum;
+  result += section + tempNum; // Add the last section/number
 
   return result + decimalPart;
 }
