@@ -40,13 +40,37 @@ document.addEventListener("DOMContentLoaded", () => {
   invoiceModal = new bootstrap.Modal($("invoiceModal")); // 在DOMContentLoaded中初始化
   confirmDeleteModal = new bootstrap.Modal($("confirmDeleteModal"));
   paginationControls = $("paginationControlsWrapper"); // 在DOMContentLoaded中初始化
+  const confirmDeleteBtn = $("confirmDeleteBtn");
 
   // 当发票模态框隐藏时，重新启用 Ctrl+A 监听
   invoiceModal._element.addEventListener('hidden.bs.modal', () => {
     document.addEventListener("keydown", handleCtrlA);
   });
+
+  // 确认删除模态框的事件监听器
+  confirmDeleteBtn.addEventListener('click', async () => {
+    const deleteType = confirmDeleteBtn.dataset.deleteType;
+    loading.style.display = "";
+    try {
+      if (deleteType === 'single') {
+        const id = confirmDeleteBtn.dataset.deleteId;
+        await pb.collection("invoices").delete(id);
+        showToast("发票删除成功！", 'success');
+      } else if (deleteType === 'batch') {
+        await Promise.all([...selected].map(id => pb.collection("invoices").delete(id)));
+        selected.clear();
+        toggleBatchUI();
+        showToast("批量删除成功！", 'success');
+      }
+      confirmDeleteModal.hide();
+      loadInvoices();
+    } catch (e) {
+      showToast("删除失败：" + e.message, 'danger');
+    }
+    loading.style.display = "none";
+    document.addEventListener("keydown", handleCtrlA); // 恢复 Ctrl+A 监听
+  });
 });
-const confirmDeleteBtn = $("confirmDeleteBtn");
 
 let selected = new Set();
 let totalAmount = 0;
@@ -626,29 +650,7 @@ batchDownloadBtn.onclick = async ()=>{
   // 生成 CSV 文件
 
 
-// 确认删除模态框的事件监听器
-confirmDeleteBtn.addEventListener('click', async () => {
-  const deleteType = confirmDeleteBtn.dataset.deleteType;
-  loading.style.display = "";
-  try {
-    if (deleteType === 'single') {
-      const id = confirmDeleteBtn.dataset.deleteId;
-      await pb.collection("invoices").delete(id);
-      showToast("发票删除成功！", 'success');
-    } else if (deleteType === 'batch') {
-      await Promise.all([...selected].map(id => pb.collection("invoices").delete(id)));
-      selected.clear();
-      toggleBatchUI();
-      showToast("批量删除成功！", 'success');
-    }
-    loadInvoices();
-  } catch (e) {
-    showToast("删除失败：" + e.message, 'danger');
-  }
-  loading.style.display = "none";
-  confirmDeleteModal.hide();
-  document.addEventListener("keydown", handleCtrlA); // 恢复 Ctrl+A 监听
-});  if (invoicesData.length > 0) {
+  if (invoicesData.length > 0) {
     const headers = Object.keys(invoicesData[0]);
     const csvContent = [headers.join(","), ...invoicesData.map(row => headers.map(fieldName => JSON.stringify(row[fieldName])).join(","))].join("\n");
     // 添加 UTF-8 BOM，确保 Excel 等软件正确识别中文编码
