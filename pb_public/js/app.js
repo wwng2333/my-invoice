@@ -286,6 +286,13 @@ itemsPerPageSelect.onchange = () => {
   loadInvoices();
 };
 
+const statusMap = {
+  pending_application: "待申请",
+  in_invoicing: "开票中",
+  in_reimbursement: "报销中",
+  reimbursed: "已报销",
+};
+
 /* ---------- 卡片元素 ---------- */
 function cardEl(rec) {
   const tr = document.createElement("tr");
@@ -298,7 +305,7 @@ function cardEl(rec) {
     <td>${rec.vendor}</td>
     <td>¥${Number(rec.amount).toFixed(2)}</td>
 
-    <td><span class="badge bg-${color(rec.status)}">${rec.status}</span></td>
+    <td><span class="badge bg-${color(rec.status)}">${statusMap[rec.status] || rec.status}</span></td>
     <td class="text-truncate" style="max-width: 150px;">${rec.description || "-"}</td>
     <td>${(rec.attachments||[]).length === 0 ? "无" : (rec.attachments||[]).map((_,i)=>`<i class="bi bi-file-earmark-pdf-fill text-danger me-1" title="附件${i+1}"></i>`).join("")}</td>
     <td>
@@ -324,7 +331,7 @@ function cardEl(rec) {
   };
   return tr;
 }
-const color = s=>({approved:"success",rejected:"danger",pending:"warning"}[s]||"secondary");
+const color = s=>({pending_application:"secondary",in_invoicing:"warning",in_reimbursement:"primary",reimbursed:"success"}[s]||"secondary");
 
 /* ---------- 选择逻辑 ---------- */
 function toggleSelect(id, row) {
