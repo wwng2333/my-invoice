@@ -403,7 +403,6 @@ function openModal(rec){
     $("invoiceDate").value  = rec.invoice_date ? new Date(rec.invoice_date).toISOString().slice(0,10) : "";
     $("vendor").value    = rec.vendor;
     $("amount").value    =rec.amount;
-    $("taxAmount").value =rec.tax_amount||"";
     $("status").value    =rec.status;
     $("description").value=rec.description||"";
     renderAttachmentPreview(); // 调用新的渲染函数
