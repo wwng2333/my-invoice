@@ -204,9 +204,10 @@
         <div>
           <select id="statusFilter" class="form-select">
             <option value="">所有状态</option>
-            <option value="pending">待处理</option>
-            <option value="approved">已批准</option>
-            <option value="rejected">已拒绝</option>
+            <option value="pending_application">待申请</option>
+            <option value="in_invoicing">开票中</option>
+            <option value="in_reimbursement">报销中</option>
+            <option value="reimbursed">已报销</option>
           </select>
         </div>
       </div>
@@ -278,9 +279,10 @@
               <div class="col-md-6 mb-3">
                 <label for="status" class="form-label">状态</label>
                 <select id="status" name="status" class="form-select">
-                  <option value="pending">待处理</option>
-                  <option value="approved">已批准</option>
-                  <option value="rejected">已拒绝</option>
+                  <option value="pending_application">待申请</option>
+                  <option value="in_invoicing">开票中</option>
+                  <option value="in_reimbursement">报销中</option>
+                  <option value="reimbursed">已报销</option>
                 </select>
               </div>
             </div>
@@ -335,9 +337,10 @@
   <div id="batchActions" class="btn-group shadow-lg">
     <select id="batchStatusSelect" class="form-select me-2" style="width: auto;">
       <option value="">选择状态</option>
-      <option value="pending">待处理</option>
-      <option value="approved">已批准</option>
-      <option value="rejected">已拒绝</option>
+      <option value="pending_application">待申请</option>
+      <option value="in_invoicing">开票中</option>
+      <option value="in_reimbursement">报销中</option>
+      <option value="reimbursed">已报销</option>
     </select>
     <button id="batchSetStatusBtn" class="btn btn-warning d-flex align-items-center"><i class="bi bi-arrow-repeat me-1"></i> <span>设置状态</span></button>
     <button id="batchDeleteBtn" class="btn btn-danger d-flex align-items-center"><i class="bi bi-trash-fill me-1"></i> <span>删除</span></button>
