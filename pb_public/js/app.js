@@ -3,44 +3,44 @@ const pb = new PocketBase(window.location.origin);
 
 
 /* DOM 引用 */
-const $ = (id) => document.getElementById(id);
-const loginForm       = $("loginForm");
-const loginSection    = $("loginSection");
-const mainSection     = $("mainSection");
-const logoutBtn       = $("logoutBtn");
-const currentUserSpan = $("currentUser");
-const currentAvatarImg = $("currentAvatar");
-const addInvoiceBtn   = $("addInvoiceBtn");
-const modalTitle      = $("modalTitle");
-const invoiceForm     = $("invoiceForm");
-const saveInvoiceBtn  = $("saveInvoiceBtn");
-const invoiceList     = $("invoiceList");
-const loading         = $("loading");
-const searchInput     = $("searchInput");
-const statusFilter    = $("statusFilter");
-const batchActions    = $("batchActions");
-const batchDeleteBtn  = $("batchDeleteBtn");
-const batchDownloadBtn= $("batchDownloadBtn");
-const deselectAllBtn  = $("deselectAllBtn");
-const batchTotalAmount= $("batchTotalAmount");
-const batchCount      = $("batchCount");
-const selectAllCheckbox = $("selectAllCheckbox");
-const batchStatusSelect = $("batchStatusSelect");
-const batchSetStatusBtn = $("batchSetStatusBtn");
-let attachments       = $("attachments");
+const getEl = (id) => document.getElementById(id);
+const loginForm       = getEl("loginForm");
+const loginSection    = getEl("loginSection");
+const mainSection     = getEl("mainSection");
+const logoutBtn       = getEl("logoutBtn");
+const currentUserSpan = getEl("currentUser");
+const currentAvatarImg = getEl("currentAvatar");
+const addInvoiceBtn   = getEl("addInvoiceBtn");
+const modalTitle      = getEl("modalTitle");
+const invoiceForm     = getEl("invoiceForm");
+const saveInvoiceBtn  = getEl("saveInvoiceBtn");
+const invoiceList     = getEl("invoiceList");
+const loading         = getEl("loading");
+const searchInput     = getEl("searchInput");
+const statusFilter    = getEl("statusFilter");
+const batchActions    = getEl("batchActions");
+const batchDeleteBtn  = getEl("batchDeleteBtn");
+const batchDownloadBtn= getEl("batchDownloadBtn");
+const deselectAllBtn  = getEl("deselectAllBtn");
+const batchTotalAmount= getEl("batchTotalAmount");
+const batchCount      = getEl("batchCount");
+const selectAllCheckbox = getEl("selectAllCheckbox");
+const batchStatusSelect = getEl("batchStatusSelect");
+const batchSetStatusBtn = getEl("batchSetStatusBtn");
+let attachments       = getEl("attachments");
 let paginationControls; // 声明为let
-const pagination      = $("pagination");
-const itemsPerPageSelect = $("itemsPerPageSelect");
-const recognizeInvoiceNumberBtn = $("recognizeInvoiceNumberBtn");
-const noInvoicesMessage = $("noInvoicesMessage");
+const pagination      = getEl("pagination");
+const itemsPerPageSelect = getEl("itemsPerPageSelect");
+const recognizeInvoiceNumberBtn = getEl("recognizeInvoiceNumberBtn");
+const noInvoicesMessage = getEl("noInvoicesMessage");
 // 将模态框的初始化移动到 DOMContentLoaded 事件中
 let invoiceModal; // 声明为let
 let confirmDeleteModal;
 document.addEventListener("DOMContentLoaded", () => {
-  invoiceModal = new bootstrap.Modal($("invoiceModal")); // 在DOMContentLoaded中初始化
-  confirmDeleteModal = new bootstrap.Modal($("confirmDeleteModal"));
-  paginationControls = $("paginationControlsWrapper"); // 在DOMContentLoaded中初始化
-  const confirmDeleteBtn = $("confirmDeleteBtn");
+  invoiceModal = new bootstrap.Modal(getEl("invoiceModal")); // 在DOMContentLoaded中初始化
+  confirmDeleteModal = new bootstrap.Modal(getEl("confirmDeleteModal"));
+  paginationControls = getEl("paginationControlsWrapper"); // 在DOMContentLoaded中初始化
+  const confirmDeleteBtn = getEl("confirmDeleteBtn");
 
   // 当发票模态框隐藏时，重新启用 Ctrl+A 监听
   invoiceModal._element.addEventListener('hidden.bs.modal', () => {
@@ -84,7 +84,7 @@ let totalPages = 0;
 /* ---------- 登录 / 退出 ---------- */
 loginForm.addEventListener("submit", async e => {
   e.preventDefault();
-  const email = $("email").value, pass = $("password").value;
+  const email = getEl("email").value, pass = getEl("password").value;
   try {
     await pb.collection("users").authWithPassword(email, pass);
     renderUI();
@@ -391,20 +391,20 @@ function openModal(rec){
 
     // 清空文件输入框的值
     attachments.value = ''; // 显式清空文件输入框
-  $("invoiceId").value = rec?rec.id:"";
+  getEl("invoiceId").value = rec?rec.id:"";
   currentAttachments = rec && rec.attachments ? [...rec.attachments] : [];
   currentRecord = rec; // 保存当前记录
-  $("attachmentPreview").innerHTML=""; // 确保在处理 currentAttachments 之前清空
+  getEl("attachmentPreview").innerHTML=""; // 确保在处理 currentAttachments 之前清空
   modalTitle.textContent = rec?"编辑发票":"添加发票";
 
   if(rec){
-    $("invoiceNumber").value = rec.invoice_number;
+    getEl("invoiceNumber").value = rec.invoice_number;
     // 日期字段需截取 YYYY-MM-DD 才能填充到 date 输入框
-    $("invoiceDate").value  = rec.invoice_date ? new Date(rec.invoice_date).toISOString().slice(0,10) : "";
-    $("vendor").value    = rec.vendor;
-    $("amount").value    =rec.amount;
-    $("status").value    =rec.status;
-    $("description").value=rec.description||"";
+    getEl("invoiceDate").value  = rec.invoice_date ? new Date(rec.invoice_date).toISOString().slice(0,10) : "";
+    getEl("vendor").value    = rec.vendor;
+    getEl("amount").value    =rec.amount;
+    getEl("status").value    =rec.status;
+    getEl("description").value=rec.description||"";
     renderAttachmentPreview(); // 调用新的渲染函数
   }
   invoiceModal.show();
@@ -484,7 +484,7 @@ function openModal(rec){
       // 优化发票号码识别逻辑：发票号码为20位纯数字
       const invoiceNumberMatch = fullText.match(/\b\d{20}\b/);
       if (invoiceNumberMatch) {
-        $("invoiceNumber").value = invoiceNumberMatch[0];
+        getEl("invoiceNumber").value = invoiceNumberMatch[0];
         showToast("发票号码识别成功！", 'success');
       } else {
         showToast("未能识别到发票号码，请手动输入。", 'warning');
@@ -499,7 +499,7 @@ function openModal(rec){
 
 // 渲染附件预览
 function renderAttachmentPreview() {
-  const previewEl = $("attachmentPreview");
+  const previewEl = getEl("attachmentPreview");
   previewEl.innerHTML = ""; // 清空现有预览
 
   if (currentAttachments.length > 0) {
@@ -539,7 +539,7 @@ invoiceForm.addEventListener("submit", async (e) => {
     e.preventDefault(); // 阻止表单默认提交，以便进行异步保存
     console.log("Attempting to save invoice...");
     try {
-        const id = $("invoiceId").value;
+        const id = getEl("invoiceId").value;
         const fd = new FormData(invoiceForm);
         fd.append("user", pb.authStore.model.id); // 归属用户
 
