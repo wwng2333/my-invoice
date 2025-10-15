@@ -33,6 +33,10 @@ const pagination      = getEl("pagination");
 const itemsPerPageSelect = getEl("itemsPerPageSelect");
 const recognizeInvoiceNumberBtn = getEl("recognizeInvoiceNumberBtn");
 const noInvoicesMessage = getEl("noInvoicesMessage");
+
+const showLoader = () => loading.style.display = "";
+const hideLoader = () => loading.style.display = "none";
+
 // 将模态框的初始化移动到 DOMContentLoaded 事件中
 let invoiceModal; // 声明为let
 let confirmDeleteModal;
@@ -50,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 确认删除模态框的事件监听器
   confirmDeleteBtn.addEventListener('click', async () => {
     const deleteType = confirmDeleteBtn.dataset.deleteType;
-    loading.style.display = "";
+    showLoader();
     try {
       if (deleteType === 'single') {
         const id = confirmDeleteBtn.dataset.deleteId;
@@ -67,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (e) {
       showToast("删除失败：" + e.message, 'danger');
     }
-    loading.style.display = "none";
+    hideLoader();
     document.addEventListener("keydown", handleCtrlA); // 恢复 Ctrl+A 监听
   });
 });
@@ -157,7 +161,7 @@ function renderUI() {
 }
 renderUI();
 async function loadInvoices(sortBy = "invoice_date", sortOrder = "desc", page = currentPage, perPage = itemsPerPage) {
-  loading.style.display = "";
+  showLoader();
   invoiceList.innerHTML = ""; // 清空 tbody
   selected.clear();
   totalAmount = 0;
@@ -192,7 +196,7 @@ async function loadInvoices(sortBy = "invoice_date", sortOrder = "desc", page = 
   } catch (e) {
       showToast("加载失败：" + e.message, 'danger');
     }
-  loading.style.display = "none";
+  hideLoader();
 }
 
 // 渲染分页控件
@@ -300,6 +304,7 @@ function cardEl(rec) {
   const tr = document.createElement("tr");
   tr.className = `invoice-row ${selected.has(rec.id) ? "selected":""}`;
   tr.dataset.id = rec.id;
+  tr.dataset.amount = rec.amount; // 缓存金额
   tr.innerHTML = `
     <td><input type="checkbox" class="row-select-checkbox" ${selected.has(rec.id) ? "checked":""}></td>
     <td>${rec.invoice_number}</td>
@@ -337,9 +342,7 @@ const color = s=>({pending_application:"secondary",in_invoicing:"warning",in_rei
 
 /* ---------- 选择逻辑 ---------- */
 function toggleSelect(id, row) {
-  const amountText = row.querySelector("td:nth-child(5)").textContent; // 获取金额列的文本
-  const amount = Number(amountText.replace("¥", ""));
-
+  const amount = Number(row.dataset.amount);
   const checkbox = row.querySelector(".row-select-checkbox");
 
   if (selected.has(id)) {
@@ -612,7 +615,7 @@ batchSetStatusBtn.onclick = async () => {
   }
   if (!selected.size || !confirm(`确定将选中 ${selected.size} 条发票状态设置为 "${newStatus}"?`)) return;
 
-  loading.style.display = "";
+  showLoader();
   try {
     await Promise.all([...selected].map(id =>
       pb.collection("invoices").update(id, { status: newStatus })
@@ -624,7 +627,7 @@ batchSetStatusBtn.onclick = async () => {
   } catch (e) {
     showToast("批量设置状态失败：" + e.message, 'danger');
   }
-  loading.style.display = "none";
+  hideLoader();
 };
 
 /* ---------- 批量下载附件 ---------- */
@@ -732,8 +735,7 @@ selectAllCheckbox.onchange = () => {
   document.querySelectorAll(".invoice-row").forEach(row => {
     const id = row.dataset.id;
     const checkbox = row.querySelector(".row-select-checkbox");
-    const amountText = row.querySelector("td:nth-child(5)").textContent;
-    const amount = Number(amountText.replace("¥", ""));
+    const amount = Number(row.dataset.amount);
 
     if (isChecked) {
       if (!selected.has(id)) {
