@@ -176,7 +176,9 @@ async function loadInvoices(sortBy = "invoice_date", sortOrder = "desc", page = 
   try {
     const result = await pb.collection("invoices").getList(page, perPage, {
       sort: `${sortOrder === "desc" ? "-" : ""}${sortBy}`,
-      filter: filters.join(" && ")
+      filter: filters.join(" && "),
+      // 新增 fields 参数，只请求必要的字段
+      fields: "id,invoice_number,invoice_date,vendor,amount,status,description,attachments"
     });
     result.items.forEach(r => invoiceList.appendChild(cardEl(r)));
     if (result.items.length === 0) {
