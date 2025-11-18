@@ -40,14 +40,15 @@ const hideLoader = () => loading.style.display = "none";
 // 将模态框的初始化移动到 DOMContentLoaded 事件中
 let invoiceModal; // 声明为let
 let confirmDeleteModal;
+let confirmDeleteBtn;
 document.addEventListener("DOMContentLoaded", () => {
   invoiceModal = new bootstrap.Modal(getEl("invoiceModal")); // 在DOMContentLoaded中初始化
   confirmDeleteModal = new bootstrap.Modal(getEl("confirmDeleteModal"));
   paginationControls = getEl("paginationControlsWrapper"); // 在DOMContentLoaded中初始化
-  const confirmDeleteBtn = getEl("confirmDeleteBtn");
+  confirmDeleteBtn = getEl("confirmDeleteBtn");
 
   // 当发票模态框隐藏时，重新启用 Ctrl+A 监听
-  invoiceModal._element.addEventListener('hidden.bs.modal', () => {
+  getEl("invoiceModal").addEventListener('hidden.bs.modal', () => {
     document.addEventListener("keydown", handleCtrlA);
   });
 
@@ -285,12 +286,6 @@ function renderPagination(totalItems) {
   pagination.appendChild(nextItem);
 }
 
-// 每页显示数量改变事件
-itemsPerPageSelect.onchange = () => {
-  itemsPerPage = parseInt(itemsPerPageSelect.value);
-  currentPage = 1; // 改变每页数量时重置到第一页
-  loadInvoices();
-};
 
 const statusMap = {
   pending_application: "待申请",
@@ -375,8 +370,10 @@ function toggleBatchUI() {
 }
 
 function updateTotalAmountDisplay() {
-  batchTotalAmount.textContent = `总金额: ¥${totalAmount.toFixed(2)}`;
-  batchCount.textContent = `已选: ${selected.size} 条`;
+  const totalAmountValueEl = getEl("totalAmountValue");
+  const selectedCountEl = getEl("selectedCount");
+  if (totalAmountValueEl) totalAmountValueEl.textContent = totalAmount.toFixed(2);
+  if (selectedCountEl) selectedCountEl.textContent = String(selected.size);
 }
 
 /* ---------- 搜索过滤监听 ---------- */
@@ -428,7 +425,7 @@ function openModal(rec){
 
     const file = files[0];
     if (file.type !== "application/pdf") {
-      alert("请选择 PDF 文件！");
+      showToast("请选择 PDF 文件！", 'warning');
       return;
     }
 
