@@ -285,25 +285,23 @@ function updateBatchUI() {
     const count = state.selected.size;
     const batchActionsEl = els.batchActions;
 
-    // 如果批量操作栏不存在，则直接返回，避免错误
-    if (!batchActionsEl) {
-        console.warn("Batch actions element not found.");
+    // 🚨 增强检查：如果关键元素不存在，立即返回
+    if (!batchActionsEl || !els.totalAmountValue || !els.selectedCount) {
+        // console.warn("批量操作相关DOM元素缺失 (ID: batchActions, totalAmountValue, selectedCount)");
         return;
     }
     
-    // 更新数值 (这部分保持不变)
+    // 更新数值
     if (count === 0) state.totalAmount = 0;
-    if (els.totalAmountValue) els.totalAmountValue.textContent = state.totalAmount.toFixed(2);
-    if (els.selectedCount) els.selectedCount.textContent = String(count);
+    els.totalAmountValue.textContent = state.totalAmount.toFixed(2);
+    els.selectedCount.textContent = String(count);
 
-    // 优化显隐逻辑：使用 CSS 动画类
+    // 优化显隐逻辑
     if (count > 0) {
-        batchActionsEl.style.display = "flex"; // 先确保布局存在
-        // 稍微延迟添加 show class 以触发 transition
+        batchActionsEl.style.display = "flex"; 
         setTimeout(() => batchActionsEl.classList.add("show"), 10);
     } else {
         batchActionsEl.classList.remove("show");
-        // 等动画结束后再隐藏 display (300ms 是 CSS 里的 transition 时间)
         setTimeout(() => {
             if(!batchActionsEl.classList.contains("show")) {
                 batchActionsEl.style.display = "none";
