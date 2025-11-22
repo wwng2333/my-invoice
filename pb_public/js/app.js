@@ -284,6 +284,12 @@ function toggleSelect(id, row, checkbox) {
 function updateBatchUI() {
     const count = state.selected.size;
     const batchActionsEl = els.batchActions;
+
+    // 如果批量操作栏不存在，则直接返回，避免错误
+    if (!batchActionsEl) {
+        console.warn("Batch actions element not found.");
+        return;
+    }
     
     // 更新数值 (这部分保持不变)
     if (count === 0) state.totalAmount = 0;
