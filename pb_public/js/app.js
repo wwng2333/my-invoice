@@ -283,14 +283,27 @@ function toggleSelect(id, row, checkbox) {
 
 function updateBatchUI() {
     const count = state.selected.size;
-    els.batchActions.style.display = count ? "flex" : "none";
-    els.batchTotalAmount.style.display = count ? "block" : "none";
-    els.batchCount.style.display = count ? "block" : "none";
+    const batchActionsEl = els.batchActions;
     
-    if (count === 0) state.totalAmount = 0; // 浮点数修正
-    
+    // 更新数值 (这部分保持不变)
+    if (count === 0) state.totalAmount = 0;
     if (els.totalAmountValue) els.totalAmountValue.textContent = state.totalAmount.toFixed(2);
     if (els.selectedCount) els.selectedCount.textContent = String(count);
+
+    // 优化显隐逻辑：使用 CSS 动画类
+    if (count > 0) {
+        batchActionsEl.style.display = "flex"; // 先确保布局存在
+        // 稍微延迟添加 show class 以触发 transition
+        setTimeout(() => batchActionsEl.classList.add("show"), 10);
+    } else {
+        batchActionsEl.classList.remove("show");
+        // 等动画结束后再隐藏 display (300ms 是 CSS 里的 transition 时间)
+        setTimeout(() => {
+            if(!batchActionsEl.classList.contains("show")) {
+                batchActionsEl.style.display = "none";
+            }
+        }, 300);
+    }
 }
 
 function checkSelectAllStatus() {

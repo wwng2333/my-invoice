@@ -5,139 +5,205 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>发票管理系统</title>
 
-  <!-- Bootstrap & Icons -->
   <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/bootstrap/5.3.8/css/bootstrap.min.css" integrity="sha512-2bBQCjcnw658Lho4nlXJcc6WkV/UxpE/sAokbXPxQNGqmNdQrWqtw26Ns9kFF/yG792pKR1Sx8/Y1Lf1XN4GKA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css" integrity="sha512-t7Few9xlddEmgd3oKZQahkNI4dS6l80+eGEzFQiqtyVYdvcSG2D3Iub77R20BdotfRPA9caaRkg1tyaJiPmO0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />  
   <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" integrity="sha512-MQXduO8IQnJVq1qmySpN87QQkiR1bZHtorbJBD0tzy7/0U9+YIC93QWHeGTEoojMVHWWNkoCp8V6OzVSYrX0oQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <style>
-    body{background:#f8f9fa}
-    .invoice-card{transition:.2s;cursor:pointer}
-    .invoice-card:hover{transform:translateY(-4px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
-    .invoice-card.selected{background:#d0eaff!important;border-color:#0d6efd!important}
-    #batchActions{position:fixed;bottom:20px;right:20px;z-index:1050;display:none}
+    :root {
+        --primary-color: #2563eb;       /* 更现代的蓝色 */
+        --primary-light: #eff6ff;       /* 浅蓝背景 */
+        --bg-color: #f3f4f6;            /* 柔和的灰背景 */
+        --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        --hover-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --border-radius: 12px;
+    }
 
-    /* Custom table styles */
-    .table th, .table td {
-      padding: 0.75rem;
-      vertical-align: middle;
+    body {
+        background-color: var(--bg-color);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        color: #1f2937;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* --- 导航栏 --- */
+    .navbar {
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        box-shadow: none !important;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    .navbar-brand {
+        color: #111827 !important;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+    #currentUser, #logoutBtn span, #logoutBtn i {
+        color: #4b5563 !important;
+    }
+    #logoutBtn {
+        border-color: #e5e7eb !important;
+        color: #4b5563 !important;
+    }
+    #logoutBtn:hover {
+        background-color: #f3f4f6 !important;
+        color: #111827 !important;
+    }
+
+    /* --- 卡片与容器 --- */
+    .main-card {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        border: none;
+        padding: 20px;
+        margin-bottom: 80px;
+    }
+
+    /* --- 表格优化 --- */
+    .table-responsive {
+        border-radius: var(--border-radius);
+    }
+    .table {
+        margin-bottom: 0;
     }
     .table thead th {
-      position: sticky;
-      top: 0;
-      background-color: #f8f9fa; /* Match body background or a slightly different shade */
-      z-index: 10;
-      box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+        background-color: #f9fafb;
+        color: #6b7280;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 12px 16px;
     }
-    .table-responsive {
-      overflow-y: auto;
-      max-height: 70vh; /* Adjust as needed for desired scrollable height */
+    .table tbody td {
+        padding: 16px;
+        color: #374151;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 0.9rem;
+    }
+    .invoice-row {
+        transition: all 0.2s ease;
+    }
+    .invoice-row:hover {
+        background-color: #f9fafb;
+        transform: scale(1.002);
+    }
+    .invoice-row.selected {
+        background-color: var(--primary-light) !important;
+    }
+    .row-select-checkbox {
+        cursor: pointer;
+        width: 16px;
+        height: 16px;
+        accent-color: var(--primary-color);
     }
 
-    /* Responsive adjustments */
+    /* --- 状态标签 --- */
+    .badge {
+        padding: 0.4em 0.8em;
+        font-weight: 500;
+        border-radius: 6px;
+        font-size: 0.75rem;
+    }
+    .bg-secondary { background-color: #f3f4f6 !important; color: #4b5563 !important; }
+    .bg-warning { background-color: #fef3c7 !important; color: #92400e !important; }
+    .bg-primary { background-color: #dbeafe !important; color: #1e40af !important; }
+    .bg-success { background-color: #d1fae5 !important; color: #065f46 !important; }
+
+    /* --- 按钮与输入框 --- */
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+    .btn-primary:hover {
+        background-color: #1d4ed8;
+        transform: translateY(-1px);
+    }
+    .form-control, .form-select {
+        border-radius: 8px;
+        border-color: #d1d5db;
+        padding: 0.6rem 1rem;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    /* --- 底部批量操作栏 --- */
+    #batchActions {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: #1f2937;
+        padding: 10px 20px;
+        border-radius: 50px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 1050;
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #batchActions.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+    #batchActions button, #batchActions select {
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+    .batch-info-float {
+        position: absolute;
+        top: -50px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        box-shadow: var(--card-shadow);
+        font-weight: 600;
+        color: var(--primary-color);
+        white-space: nowrap;
+        font-size: 0.9rem;
+        pointer-events: none;
+    }
+
+    /* --- 登录框 --- */
+    #loginSection .card {
+        border: none;
+        box-shadow: var(--hover-shadow);
+        border-radius: 16px;
+    }
+    #loginSection .card-header {
+        background: white;
+        border-bottom: none;
+        padding-top: 2rem;
+    }
+    
     @media (max-width: 768px) {
-      .table thead th:nth-child(7), /* 描述 */
-      .table tbody td:nth-child(7),
-      .table thead th:nth-child(8), /* 附件 */
-      .table tbody td:nth-child(8) {
+      .table thead th:nth-child(7), .table tbody td:nth-child(7), 
+      .table thead th:nth-child(8), .table tbody td:nth-child(8) {
         display: none;
       }
-    }
-
-    @media (max-width: 768px) {
-      #currentUser {
-        display: none !important;
+      #batchActions {
+          width: 90%;
+          flex-wrap: wrap;
+          border-radius: 20px;
+          bottom: 15px;
+          justify-content: center;
       }
-
-      #batchStatusSelect,
-      #batchActions span,
-      #addInvoiceBtn span,
-      #logoutBtn span {
-        display: none !important;
-      }
-      
-      .pagination-controls-wrapper {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      
-      .pagination-controls-wrapper > div:first-child {
-        margin-bottom: 10px;
-      }
-    }
-    
-    /* Enhanced styles for better UX */
-    .navbar-brand {
-      font-weight: 600;
-    }
-    
-    .card {
-      border-radius: 10px;
-    }
-    
-    .btn-group.batch-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    
-    .batch-info-btn {
-      border-radius: 50px;
-      font-weight: 600;
-      padding: 0.5rem 1rem;
-      min-width: 40px;
-      min-height: 40px;
-    }
-    
-    .search-controls {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-    
-    .search-controls > div {
-      flex: 1;
-      min-width: 200px;
-    }
-    
-    .invoice-actions .btn {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.875rem;
-    }
-    
-    .attachment-preview {
-      max-height: 100px;
-      overflow-y: auto;
-      border: 1px solid #dee2e6;
-      border-radius: 5px;
-      padding: 0.5rem;
-      margin-top: 0.5rem;
-    }
-    
-    .status-badge {
-      font-weight: 500;
-      padding: 0.35em 0.65em;
-    }
-    
-    .table th {
-      font-weight: 600;
-      color: #495057;
-    }
-    
-    .sort-indicator {
-      opacity: 0.7;
-      margin-left: 0.25rem;
-    }
-    
-    .sort-active .sort-indicator {
-      opacity: 1;
-      color: #0d6efd;
     }
   </style>
 </head>
 <body>
-  <!-- 顶栏 -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <nav class="navbar navbar-expand-lg navbar-light fixed-top shadow-sm">
     <div class="container-fluid">
       <a class="navbar-brand" href="#"><i class="bi bi-receipt-cutoff"></i> 发票管理系统</a>
       <div class="d-flex ms-auto align-items-center">
@@ -148,8 +214,9 @@
     </div>
   </nav>
 
+  <div style="height: 80px;"></div>
+
   <div class="container mt-4">
-    <!-- 登录区 -->
     <div id="loginSection" class="row justify-content-center">
       <div class="col-md-5">
         <div class="card shadow-lg border-0 rounded-lg mt-5">
@@ -171,9 +238,9 @@
       </div>
     </div>
 
-    <!-- 主区 -->
     <div id="mainSection" style="display:none">
-      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div class="container main-card">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div id="paginationControlsWrapper" class="pagination-controls-wrapper d-flex align-items-center gap-3">
           <div class="d-flex align-items-center">
             <label for="itemsPerPageSelect" class="form-label mb-0 me-2">每页显示：</label>
@@ -186,22 +253,20 @@
           </div>
           <nav aria-label="Page navigation">
             <ul id="pagination" class="pagination mb-0" style="vertical-align: middle;">
-              <!-- Pagination links will be injected here by JavaScript -->
-            </ul>
+              </ul>
           </nav>
         </div>
         <button class="btn btn-primary d-flex align-items-center" id="addInvoiceBtn"><i class="bi bi-plus-circle-fill me-1"></i> <span>添加发票</span></button>
       </div>
 
-      <!-- 搜索过滤 -->
-      <div class="search-controls mb-3">
+      <div class="search-controls mb-4">
         <div class="input-group">
           <input id="searchInput" class="form-control" placeholder="按发票号、供应商或描述搜索...">
           <span class="input-group-text" style="background-color: #343a40; color: #f8f9fa; border-color: #495057; font-weight: bold;">
             Ctrl F
           </span>
         </div>
-        <div>
+        <div class="mt-2">
           <select id="statusFilter" class="form-select">
             <option value="">所有状态</option>
             <option value="pending_application">待申请</option>
@@ -212,7 +277,6 @@
         </div>
       </div>
 
-      <!-- 列表 -->
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead>
@@ -229,8 +293,7 @@
             </tr>
           </thead>
           <tbody id="invoiceList">
-            <!-- 发票行将在这里动态加载 -->
-          </tbody>
+            </tbody>
           <tfoot id="noInvoicesMessage" style="display: none;">
             <tr>
               <td colspan="9" class="text-center py-3 text-muted">暂无发票数据</td>
@@ -238,13 +301,13 @@
           </tfoot>
         </table>
       </div>
-      <div id="loading" class="text-center mt-5" style="display:none">
-        <div class="spinner-border text-primary"></div>
+      <div id="loading" class="text-center py-5" style="display:none">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="text-muted mt-2">加载数据中...</p>
       </div>
     </div>
   </div>
 
-  <!-- 发票表单模态框 -->
   <div class="modal fade" id="invoiceModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -305,7 +368,6 @@
     </div>
   </div>
 
-  <!-- 确认删除模态框 -->
   <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -324,28 +386,26 @@
     </div>
   </div>
 
-  <!-- 批量操作悬浮按钮 -->
-  <div id="batchTotalAmount" class="btn btn-light shadow-lg batch-info-btn" style="position:fixed;bottom:130px;right:20px;z-index:1050;display:none;">
-    <i class="bi bi-currency-dollar"></i> <span id="totalAmountValue">0.00</span>
-  </div>
-  <div id="batchCount" class="btn btn-light shadow-lg batch-info-btn" style="position:fixed;bottom:80px;right:20px;z-index:1050;display:none;">
-    <i class="bi bi-check-square"></i> <span id="selectedCount">0</span>
-  </div>
-  <div id="batchActions" class="btn-group shadow-lg">
-    <select id="batchStatusSelect" class="form-select me-2" style="width: auto;">
-      <option value="">选择状态</option>
-      <option value="pending_application">待申请</option>
-      <option value="in_invoicing">开票中</option>
-      <option value="in_reimbursement">报销中</option>
-      <option value="reimbursed">已报销</option>
+  <div id="batchActions" style="display: none;">
+    <div class="batch-info-float">
+        已选 <span id="selectedCount">0</span> 张 · 总计 ¥<span id="totalAmountValue">0.00</span>
+    </div>
+
+    <select id="batchStatusSelect" class="form-select form-select-sm bg-secondary text-white border-0" style="width: auto; max-width: 120px;">
+        <option value="" class="text-dark">更改状态...</option>
+        <option value="pending_application" class="text-dark">待申请</option>
+        <option value="in_invoicing" class="text-dark">开票中</option>
+        <option value="in_reimbursement" class="text-dark">报销中</option>
+        <option value="reimbursed" class="text-dark">已报销</option>
     </select>
-    <button id="batchSetStatusBtn" class="btn btn-warning d-flex align-items-center"><i class="bi bi-arrow-repeat me-1"></i> <span>设置状态</span></button>
-    <button id="batchDeleteBtn" class="btn btn-danger d-flex align-items-center"><i class="bi bi-trash-fill me-1"></i> <span>删除</span></button>
-    <button id="batchDownloadBtn" class="btn btn-info d-flex align-items-center"><i class="bi bi-download me-1"></i> <span>下载</span></button>
-    <button id="deselectAllBtn" class="btn btn-secondary d-flex align-items-center"><i class="bi bi-x-circle me-1"></i> <span>取消</span></button>
+
+    <button id="batchSetStatusBtn" class="btn btn-sm btn-warning text-dark fw-bold"><i class="bi bi-check2"></i> 应用</button>
+    <div class="vr bg-secondary mx-1"></div> 
+    <button id="batchDownloadBtn" class="btn btn-sm btn-outline-light"><i class="bi bi-download"></i></button>
+    <button id="batchDeleteBtn" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+    <button id="deselectAllBtn" class="btn btn-sm btn-link text-secondary text-decoration-none"><i class="bi bi-x-lg"></i></button>
   </div>
 
-  <!-- 依赖 -->
   <script src="https://s4.zstatic.net/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js" integrity="sha512-HvOjJrdwNpDbkGJIG2ZNqDlVqMo77qbs4Me4cah0HoDrfhrbA+8SBlZn1KrvAQw7cILLPFJvdwIgphzQmMm+Pw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://s4.zstatic.net/ajax/libs/pocketbase/0.26.2/pocketbase.umd.min.js" integrity="sha512-23hTPP5Tt6X+FXEQTtMkxAI7sRyPG0lUvhTsoAgYn8nFZ0jMO7ZFo7Qy9xKUyKbQ2dWUo8pvkXeVcta8on3d4Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://s4.zstatic.net/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -355,15 +415,14 @@
   <script src="https://s4.zstatic.net/ajax/libs/flatpickr/4.6.13/l10n/zh.min.js" integrity="sha512-KU9LjAMoAxs8u2DU62DsIID671imkYuyOkE0/wbjVZDRM259WxX5IhQsWTTBMhtdnhviZEqfkdhG09k7JVf9pg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://s4.zstatic.net/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    pdfjsLib.GlobalWorkerOptions.cMapUrl = './cmaps/';
+    // ⚠️ 修复2：使用 CDN 的 CMaps 路径，确保中文不乱码
+    pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://s4.zstatic.net/ajax/libs/pdf.js/3.11.174/cmaps/';
     pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
   </script>
 
   <div class="toast-container position-fixed bottom-0 end-0 p-3">
-    <!-- Toast messages will be appended here -->
-  </div>
+    </div>
 
-  <!-- 业务脚本 -->
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
