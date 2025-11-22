@@ -95,14 +95,6 @@ function setupEventListeners() {
     // 退出
     els.logoutBtn.onclick = () => { pb.authStore.clear(); renderUI(); };
 
-    // 模态框事件
-    els.invoiceModal.addEventListener('hidden.bs.modal', () => {
-        document.addEventListener("keydown", handleCtrlA);
-    });
-    els.invoiceModal.addEventListener('show.bs.modal', () => {
-        document.removeEventListener("keydown", handleCtrlA);
-    });
-
     // 确认删除
     els.confirmDeleteBtn.addEventListener('click', handleDelete);
 
@@ -705,14 +697,11 @@ function handleSelectAll() {
 }
 
 function handleGlobalKeys(e) {
-    if (e.key === "Escape") deselectAll();
-    if (e.ctrlKey && e.key === "f") {
-        e.preventDefault();
-        els.searchInput.focus();
-    }
-}
+    // 1. 如果模态框打开，停止处理全局快捷键
+    const modal = document.getElementById('invoiceModal');
+    if (modal && modal.classList.contains('show')) return;
 
-function handleCtrlA(e) {
+    // 2. Ctrl + A 处理
     if (e.ctrlKey && e.key === "a") {
         e.preventDefault();
         const allCheckboxes = document.querySelectorAll(".row-select-checkbox");
@@ -725,6 +714,17 @@ function handleCtrlA(e) {
             els.selectAllCheckbox.checked = true;
             handleSelectAll();
         }
+    }
+
+    // 3. Ctrl + F 处理
+    if (e.ctrlKey && e.key === "f") {
+        e.preventDefault();
+        els.searchInput.focus();
+    }
+    
+    // 4. ESC 处理
+    if (e.key === "Escape") {
+        deselectAll();
     }
 }
 
