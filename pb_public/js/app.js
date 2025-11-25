@@ -1,5 +1,5 @@
 /* 配置常量 */
-const PB_URL = window.location.origin; // 开发时可改为 'http://127.0.0.1:8090'
+const PB_URL = "https://invoice.csgo.ovh/"; // 开发时可改为 'http://127.0.0.1:8090'
 const pb = new PocketBase(PB_URL);
 
 /* DOM 引用 (使用解构赋值简化) */
@@ -320,17 +320,24 @@ function checkSelectAllStatus() {
 }
 
 /* ---------- 新增 / 编辑 ---------- */
-function openModal(rec) {
+async function openModal(rec) {
     els.invoiceForm.reset();
     els.attachments.value = ''; // 简单清空文件输入
     
     els.invoiceId.value = rec ? rec.id : "";
     state.currentAttachments = rec && rec.attachments ? [...rec.attachments] : [];
-    state.currentRecord = rec;
     els.attachmentPreview.innerHTML = "";
     els.modalTitle.textContent = rec ? "编辑发票" : "添加发票";
 
     if (rec) {
+        // 获取完整的记录对象，确保包含所有字段用于生成文件URL
+        try {
+            state.currentRecord = await pb.collection("invoices").getOne(rec.id);
+        } catch (e) {
+            console.error("获取完整记录失败：", e);
+            state.currentRecord = rec; // 降级处理：使用不完整的记录
+        }
+        
         els.invoiceNumber.value = rec.invoice_number;
         els.invoiceDate.value = rec.invoice_date ? rec.invoice_date.slice(0, 10) : "";
         els.vendor.value = rec.vendor;
@@ -338,6 +345,8 @@ function openModal(rec) {
         els.status.value = rec.status;
         els.description.value = rec.description || "";
         renderAttachmentPreview();
+    } else {
+        state.currentRecord = null;
     }
     bsInvoiceModal.show();
 }
@@ -610,16 +619,39 @@ function renderAttachmentPreview() {
     state.currentAttachments.forEach(f => {
         const div = document.createElement("div");
         div.className = "d-flex align-items-center mb-1 bg-light p-1 rounded";
-        div.innerHTML = `
-            <i class="bi bi-paperclip me-2 text-secondary"></i>
-            <a href="${pb.files.getURL(state.currentRecord, f)}" target="_blank" class="text-decoration-none text-truncate me-auto" style="max-width: 300px;">${f}</a>
-            <button type="button" class="btn btn-sm text-danger ms-2"><i class="bi bi-x-lg"></i></button>
-        `;
-        // 删除逻辑
-        div.querySelector("button").onclick = () => {
+        
+        // 创建链接元素
+        const link = document.createElement("a");
+        const fileUrl = pb.files.getURL(state.currentRecord, f);
+        link.href = fileUrl;
+        link.target = "_blank";
+        link.className = "text-decoration-none text-truncate me-auto";
+        link.style.maxWidth = "300px";
+        link.style.pointerEvents = "auto";
+        link.textContent = f;
+        
+        // 创建图标
+        const icon = document.createElement("i");
+        icon.className = "bi bi-paperclip me-2 text-secondary";
+        
+        // 创建删除按钮
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "btn btn-sm text-danger ms-2";
+        deleteBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+        deleteBtn.style.pointerEvents = "auto";
+        deleteBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             state.currentAttachments = state.currentAttachments.filter(item => item !== f);
             renderAttachmentPreview();
         };
+        
+        // 组装元素
+        div.appendChild(icon);
+        div.appendChild(link);
+        div.appendChild(deleteBtn);
+        
         container.appendChild(div);
     });
 }
