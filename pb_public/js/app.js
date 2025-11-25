@@ -353,6 +353,8 @@ function updateBatchUI() {
 }
 
 function checkSelectAllStatus() {
+    if (!els.selectAllCheckbox) return;
+    
     const allCheckboxes = document.querySelectorAll(".row-select-checkbox");
     if(allCheckboxes.length === 0) {
         els.selectAllCheckbox.checked = false;
@@ -363,13 +365,15 @@ function checkSelectAllStatus() {
 
 /* ---------- 新增 / 编辑 ---------- */
 async function openModal(rec) {
-    els.invoiceForm.reset();
-    els.attachments.value = ''; // 简单清空文件输入
+    if (!els.invoiceForm || !els.invoiceModal) return;
     
-    els.invoiceId.value = rec ? rec.id : "";
+    els.invoiceForm.reset();
+    if (els.attachments) els.attachments.value = ''; // 简单清空文件输入
+    
+    if (els.invoiceId) els.invoiceId.value = rec ? rec.id : "";
     state.currentAttachments = rec && rec.attachments ? [...rec.attachments] : [];
-    els.attachmentPreview.innerHTML = "";
-    els.modalTitle.textContent = rec ? "编辑发票" : "添加发票";
+    if (els.attachmentPreview) els.attachmentPreview.innerHTML = "";
+    if (els.modalTitle) els.modalTitle.textContent = rec ? "编辑发票" : "添加发票";
 
     if (rec) {
         // 获取完整的记录对象，确保包含所有字段用于生成文件URL
@@ -380,12 +384,12 @@ async function openModal(rec) {
             state.currentRecord = rec; // 降级处理：使用不完整的记录
         }
         
-        els.invoiceNumber.value = rec.invoice_number;
-        els.invoiceDate.value = rec.invoice_date ? rec.invoice_date.slice(0, 10) : "";
-        els.vendor.value = rec.vendor;
-        els.amount.value = rec.amount;
-        els.status.value = rec.status;
-        els.description.value = rec.description || "";
+        if (els.invoiceNumber) els.invoiceNumber.value = rec.invoice_number;
+        if (els.invoiceDate) els.invoiceDate.value = rec.invoice_date ? rec.invoice_date.slice(0, 10) : "";
+        if (els.vendor) els.vendor.value = rec.vendor;
+        if (els.amount) els.amount.value = rec.amount;
+        if (els.status) els.status.value = rec.status;
+        if (els.description) els.description.value = rec.description || "";
         renderAttachmentPreview();
     } else {
         state.currentRecord = null;
@@ -395,10 +399,14 @@ async function openModal(rec) {
 
 /* ---------- PDF 识别 (优化版) ---------- */
 async function handleRecognizePDF() {
+    if (!els.attachments) return;
+    
     const files = els.attachments.files;
     if (files.length === 0) return showToast("请先选择 PDF 文件！", 'warning');
     
     const btn = els.recognizeInvoiceNumberBtn;
+    if (!btn) return;
+    
     const originalText = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 识别中...`;
@@ -442,7 +450,7 @@ async function handleRecognizePDF() {
             if (cnMatch) recognizedAmount = convertChineseToNumber(cnMatch[1]);
         }
 
-        if (recognizedAmount) els.amount.value = recognizedAmount.toFixed(2);
+        if (recognizedAmount && els.amount) els.amount.value = recognizedAmount.toFixed(2);
 
         // 2. 识别发票号码 (优化：8-20位数字，通常在"发票号码"关键字附近，或者独立的连续长数字)
         // 移除所有空白符后再匹配
@@ -452,26 +460,28 @@ async function handleRecognizePDF() {
         const numMatchInv = cleanText.match(invoiceNumRegex);
         
         if (numMatchInv) {
-            els.invoiceNumber.value = numMatchInv[1];
+            if (els.invoiceNumber) els.invoiceNumber.value = numMatchInv[1];
         } else {
             // 优先级2：独立的10/12/20位数字（需谨慎，防止匹配到税号）
             // 简单策略：找最长的数字串，通常税号是15-20位，发票号也类似，这步比较这就模糊
             // 这里保留原有的 20位全电发票逻辑，并放宽到 8位
             const looseMatch = cleanText.match(/\d{20}/) || cleanText.match(/\d{10,12}/);
-            if(looseMatch) els.invoiceNumber.value = looseMatch[0];
+            if(looseMatch && els.invoiceNumber) els.invoiceNumber.value = looseMatch[0];
         }
 
         // 3. 识别日期 (YYYY年MM月DD日 或 YYYY-MM-DD)
         const dateRegex = /(\d{4})[.\-年](\d{1,2})[.\-月](\d{1,2})/;
         const dateMatch = cleanText.match(dateRegex);
-        if(dateMatch) {
+        if(dateMatch && els.invoiceDate) {
             // 格式化为 YYYY-MM-DD
             const year = dateMatch[1];
             const month = dateMatch[2].padStart(2, '0');
             const day = dateMatch[3].padStart(2, '0');
             els.invoiceDate.value = `${year}-${month}-${day}`;
             // Flatpickr 更新
-            els.invoiceDate._flatpickr.setDate(`${year}-${month}-${day}`);
+            if (els.invoiceDate._flatpickr) {
+                els.invoiceDate._flatpickr.setDate(`${year}-${month}-${day}`);
+            }
         }
 
         showToast("识别完成，请核对信息", 'success');
@@ -489,7 +499,7 @@ async function handleRecognizePDF() {
 async function handleSaveInvoice(e) {
     e.preventDefault();
     try {
-        const id = els.invoiceId.value;
+        const id = els.invoiceId ? els.invoiceId.value : "";
         const fd = new FormData(els.invoiceForm);
         fd.append("user", pb.authStore.model.id);
 
@@ -515,7 +525,7 @@ async function handleSaveInvoice(e) {
             fd.delete("attachments"); 
             
             // 3. 添加新上传的文件
-            if (els.attachments.files.length > 0) {
+            if (els.attachments && els.attachments.files.length > 0) {
                  for (const file of els.attachments.files) {
                     fd.append("attachments", file); // 追加新文件
                 }
@@ -651,6 +661,8 @@ async function handleBatchDownload() {
 /* ---------- 辅助函数 ---------- */
 function renderAttachmentPreview() {
     const container = els.attachmentPreview;
+    if (!container) return;
+    
     container.innerHTML = "";
     
     if (state.currentAttachments.length === 0) {
@@ -758,10 +770,12 @@ function deselectAll() {
     document.querySelectorAll(".row-select-checkbox").forEach(c => c.checked = false);
     state.totalAmount = 0;
     updateBatchUI();
-    els.selectAllCheckbox.checked = false;
+    if (els.selectAllCheckbox) els.selectAllCheckbox.checked = false;
 }
 
 function handleSelectAll() {
+    if (!els.selectAllCheckbox) return;
+    
     const isChecked = els.selectAllCheckbox.checked;
     const rows = document.querySelectorAll(".invoice-row");
     
@@ -804,15 +818,17 @@ function handleGlobalKeys(e) {
         if (allChecked) {
             deselectAll();
         } else {
-            els.selectAllCheckbox.checked = true;
-            handleSelectAll();
+            if (els.selectAllCheckbox) {
+                els.selectAllCheckbox.checked = true;
+                handleSelectAll();
+            }
         }
     }
 
     // 3. Ctrl + F 处理
     if (e.ctrlKey && e.key === "f") {
         e.preventDefault();
-        els.searchInput.focus();
+        if (els.searchInput) els.searchInput.focus();
     }
     
     // 4. ESC 处理
