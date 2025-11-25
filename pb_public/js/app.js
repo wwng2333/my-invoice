@@ -2,52 +2,56 @@
 const PB_URL = "https://invoice.csgo.ovh/"; // 开发时可改为 'http://127.0.0.1:8090'
 const pb = new PocketBase(PB_URL);
 
-/* DOM 引用 (使用解构赋值简化) */
+/* DOM 引用 (使用延迟初始化，兼容Cloudflare Rocket Loader) */
 const getEl = (id) => document.getElementById(id);
-const els = {
-    loginForm: getEl("loginForm"),
-    loginSection: getEl("loginSection"),
-    mainSection: getEl("mainSection"),
-    logoutBtn: getEl("logoutBtn"),
-    currentUserSpan: getEl("currentUser"),
-    currentAvatarImg: getEl("currentAvatar"),
-    addInvoiceBtn: getEl("addInvoiceBtn"),
-    modalTitle: getEl("modalTitle"),
-    invoiceForm: getEl("invoiceForm"),
-    saveInvoiceBtn: getEl("saveInvoiceBtn"),
-    invoiceList: getEl("invoiceList"),
-    loading: getEl("loading"),
-    searchInput: getEl("searchInput"),
-    statusFilter: getEl("statusFilter"),
-    batchActions: getEl("batchActions"),
-    batchDeleteBtn: getEl("batchDeleteBtn"),
-    batchDownloadBtn: getEl("batchDownloadBtn"),
-    deselectAllBtn: getEl("deselectAllBtn"),
-    batchTotalAmount: getEl("batchTotalAmount"),
-    batchCount: getEl("batchCount"),
-    selectAllCheckbox: getEl("selectAllCheckbox"),
-    batchStatusSelect: getEl("batchStatusSelect"),
-    batchSetStatusBtn: getEl("batchSetStatusBtn"),
-    attachments: getEl("attachments"), // 注意：不需要设为 let，直接通过 value 清空
-    pagination: getEl("pagination"),
-    itemsPerPageSelect: getEl("itemsPerPageSelect"),
-    recognizeInvoiceNumberBtn: getEl("recognizeInvoiceNumberBtn"),
-    noInvoicesMessage: getEl("noInvoicesMessage"),
-    invoiceModal: getEl("invoiceModal"),
-    confirmDeleteModal: getEl("confirmDeleteModal"),
-    confirmDeleteBtn: getEl("confirmDeleteBtn"),
-    paginationControls: getEl("paginationControlsWrapper"),
-    totalAmountValue: getEl("totalAmountValue"),
-    selectedCount: getEl("selectedCount"),
-    invoiceId: getEl("invoiceId"),
-    invoiceNumber: getEl("invoiceNumber"),
-    invoiceDate: getEl("invoiceDate"),
-    vendor: getEl("vendor"),
-    amount: getEl("amount"),
-    status: getEl("status"),
-    description: getEl("description"),
-    attachmentPreview: getEl("attachmentPreview")
-};
+let els = {}; // 先定义为空对象，待DOM加载后初始化
+
+function initializeElements() {
+    els = {
+        loginForm: getEl("loginForm"),
+        loginSection: getEl("loginSection"),
+        mainSection: getEl("mainSection"),
+        logoutBtn: getEl("logoutBtn"),
+        currentUserSpan: getEl("currentUser"),
+        currentAvatarImg: getEl("currentAvatar"),
+        addInvoiceBtn: getEl("addInvoiceBtn"),
+        modalTitle: getEl("modalTitle"),
+        invoiceForm: getEl("invoiceForm"),
+        saveInvoiceBtn: getEl("saveInvoiceBtn"),
+        invoiceList: getEl("invoiceList"),
+        loading: getEl("loading"),
+        searchInput: getEl("searchInput"),
+        statusFilter: getEl("statusFilter"),
+        batchActions: getEl("batchActions"),
+        batchDeleteBtn: getEl("batchDeleteBtn"),
+        batchDownloadBtn: getEl("batchDownloadBtn"),
+        deselectAllBtn: getEl("deselectAllBtn"),
+        batchTotalAmount: getEl("batchTotalAmount"),
+        batchCount: getEl("batchCount"),
+        selectAllCheckbox: getEl("selectAllCheckbox"),
+        batchStatusSelect: getEl("batchStatusSelect"),
+        batchSetStatusBtn: getEl("batchSetStatusBtn"),
+        attachments: getEl("attachments"),
+        pagination: getEl("pagination"),
+        itemsPerPageSelect: getEl("itemsPerPageSelect"),
+        recognizeInvoiceNumberBtn: getEl("recognizeInvoiceNumberBtn"),
+        noInvoicesMessage: getEl("noInvoicesMessage"),
+        invoiceModal: getEl("invoiceModal"),
+        confirmDeleteModal: getEl("confirmDeleteModal"),
+        confirmDeleteBtn: getEl("confirmDeleteBtn"),
+        paginationControls: getEl("paginationControlsWrapper"),
+        totalAmountValue: getEl("totalAmountValue"),
+        selectedCount: getEl("selectedCount"),
+        invoiceId: getEl("invoiceId"),
+        invoiceNumber: getEl("invoiceNumber"),
+        invoiceDate: getEl("invoiceDate"),
+        vendor: getEl("vendor"),
+        amount: getEl("amount"),
+        status: getEl("status"),
+        description: getEl("description"),
+        attachmentPreview: getEl("attachmentPreview")
+    };
+}
 
 /* 状态变量 */
 const state = {
@@ -68,6 +72,15 @@ let bsConfirmDeleteModal;
 
 /* ---------- 初始化 ---------- */
 document.addEventListener("DOMContentLoaded", () => {
+    // 首先初始化DOM元素引用
+    initializeElements();
+    
+    // 检查关键元素是否加载完成
+    if (!els.invoiceModal || !els.confirmDeleteModal) {
+        console.error("关键DOM元素未加载，请检查HTML文件");
+        return;
+    }
+    
     bsInvoiceModal = new bootstrap.Modal(els.invoiceModal);
     bsConfirmDeleteModal = new bootstrap.Modal(els.confirmDeleteModal);
 
@@ -285,9 +298,9 @@ function updateBatchUI() {
     const count = state.selected.size;
     const batchActionsEl = els.batchActions;
 
-    // 🚨 增强检查：如果关键元素不存在，立即返回
+    // 增强检查：如果关键元素不存在，立即返回
     if (!batchActionsEl || !els.totalAmountValue || !els.selectedCount) {
-        // console.warn("批量操作相关DOM元素缺失 (ID: batchActions, totalAmountValue, selectedCount)");
+        console.warn("批量操作相关DOM元素缺失，跳过更新");
         return;
     }
     
