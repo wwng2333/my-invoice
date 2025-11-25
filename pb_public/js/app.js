@@ -184,6 +184,19 @@ function setupEventListeners() {
 /* ---------- 核心逻辑函数 ---------- */
 
 function renderUI() {
+    // 确保 DOM 元素已初始化
+    if (!els.loginSection || !els.mainSection) {
+        console.warn("DOM 元素尚未初始化，重新初始化...");
+        initializeElements();
+        
+        // 再次检查是否初始化成功
+        if (!els.loginSection || !els.mainSection) {
+            console.warn("DOM 元素初始化失败，100ms后重试");
+            setTimeout(renderUI, 100);
+            return;
+        }
+    }
+    
     if (pb.authStore.isValid) {
         if (els.loginSection) els.loginSection.style.display = "none";
         if (els.mainSection) els.mainSection.style.display = "";
@@ -335,18 +348,21 @@ function updateBatchUI() {
     
     // 更新数值
     if (count === 0) state.totalAmount = 0;
-    els.totalAmountValue.textContent = state.totalAmount.toFixed(2);
-    els.selectedCount.textContent = String(count);
+    
+    if (els.totalAmountValue) els.totalAmountValue.textContent = state.totalAmount.toFixed(2);
+    if (els.selectedCount) els.selectedCount.textContent = String(count);
 
     // 优化显隐逻辑
     if (count > 0) {
-        batchActionsEl.style.display = "flex"; 
-        setTimeout(() => batchActionsEl.classList.add("show"), 10);
-    } else {
-        batchActionsEl.classList.remove("show");
+        if (batchActionsEl && batchActionsEl.style) batchActionsEl.style.display = "flex"; 
         setTimeout(() => {
-            if(!batchActionsEl.classList.contains("show")) {
-                batchActionsEl.style.display = "none";
+            if (batchActionsEl && batchActionsEl.classList) batchActionsEl.classList.add("show");
+        }, 10);
+    } else {
+        if (batchActionsEl && batchActionsEl.classList) batchActionsEl.classList.remove("show");
+        setTimeout(() => {
+            if (batchActionsEl && batchActionsEl.classList && !batchActionsEl.classList.contains("show")) {
+                if (batchActionsEl.style) batchActionsEl.style.display = "none";
             }
         }, 300);
     }
