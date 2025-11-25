@@ -76,7 +76,7 @@ function safeInitialize() {
     initializeElements();
     
     // 检查关键元素是否加载完成
-    if (!els.invoiceModal || !els.confirmDeleteModal || !els.batchActions) {
+    if (!els.invoiceModal || !els.confirmDeleteModal || !els.batchActions || !els.loginSection || !els.mainSection) {
         // 元素还未加载，重试
         console.warn("关键DOM元素还未加载，500ms后重试...");
         setTimeout(safeInitialize, 500);
@@ -184,19 +184,6 @@ function setupEventListeners() {
 /* ---------- 核心逻辑函数 ---------- */
 
 function renderUI() {
-    // 确保 DOM 元素已初始化
-    if (!els.loginSection || !els.mainSection) {
-        console.warn("DOM 元素尚未初始化，重新初始化...");
-        initializeElements();
-        
-        // 再次检查是否初始化成功
-        if (!els.loginSection || !els.mainSection) {
-            console.warn("DOM 元素初始化失败，100ms后重试");
-            setTimeout(renderUI, 100);
-            return;
-        }
-    }
-    
     if (pb.authStore.isValid) {
         if (els.loginSection) els.loginSection.style.display = "none";
         if (els.mainSection) els.mainSection.style.display = "";
