@@ -1,47 +1,96 @@
-/* 配置常量 */
-const PB_URL = "https://invoice.csgo.ovh/"; // 开发时可改为 'http://127.0.0.1:8090'
-const pb = new PocketBase(PB_URL);
+/* ============================================
+   发票管理系统 - 主应用程序
+   ============================================ */
 
-/* DOM 引用 (使用延迟初始化，兼容Cloudflare Rocket Loader) */
+/* ========== 配置与常量 ========== */
+const CONFIG = {
+    PB_URL: "https://invoice.csgo.ovh/", // 开发时改为 'http://127.0.0.1:8090'
+    TIMEOUT: {
+        INIT_RETRY: 500,      // 初始化重试间隔
+        INIT_DELAY: 100,      // 初始化延迟
+        SEARCH_DEBOUNCE: 300  // 搜索防抖延迟
+    },
+    PAGE_SIZES: [10, 25, 50, 9999],
+    RETRY_MAX: 3
+};
+
+const STATUS_MAP = {
+    pending_application: "待申请",
+    in_invoicing: "开票中",
+    in_reimbursement: "报销中",
+    reimbursed: "已报销"
+};
+
+const STATUS_COLORS = {
+    pending_application: "secondary",
+    in_invoicing: "warning",
+    in_reimbursement: "primary",
+    reimbursed: "success"
+};
+
+const CHINESE_NUM_MAP = {
+    '零': 0, '壹': 1, '贰': 2, '叁': 3, '肆': 4,
+    '伍': 5, '陆': 6, '柒': 7, '捌': 8, '玖': 9
+};
+
+const CHINESE_UNIT_MAP = {
+    '拾': 10, '佰': 100, '仟': 1000, '万': 10000, '亿': 100000000
+};
+
+/* ========== PocketBase 初始化 ========== */
+const pb = new PocketBase(CONFIG.PB_URL);
+
+/* ========== DOM 元素引用 ========== */
 const getEl = (id) => document.getElementById(id);
-let els = {}; // 先定义为空对象，待DOM加载后初始化
+let els = {}; // 延迟初始化
 
+/**
+ * 初始化所有DOM元素引用
+ * 兼容Cloudflare Rocket Loader的延迟初始化
+ */
 function initializeElements() {
     els = {
+        // 认证相关
         loginForm: getEl("loginForm"),
         loginSection: getEl("loginSection"),
         mainSection: getEl("mainSection"),
         logoutBtn: getEl("logoutBtn"),
         currentUserSpan: getEl("currentUser"),
         currentAvatarImg: getEl("currentAvatar"),
+        
+        // 工具栏和按钮
         addInvoiceBtn: getEl("addInvoiceBtn"),
-        modalTitle: getEl("modalTitle"),
-        invoiceForm: getEl("invoiceForm"),
-        saveInvoiceBtn: getEl("saveInvoiceBtn"),
-        invoiceList: getEl("invoiceList"),
-        loading: getEl("loading"),
+        recognizeInvoiceNumberBtn: getEl("recognizeInvoiceNumberBtn"),
+        
+        // 搜索和筛选
         searchInput: getEl("searchInput"),
         statusFilter: getEl("statusFilter"),
-        batchActions: getEl("batchActions"),
-        batchDeleteBtn: getEl("batchDeleteBtn"),
-        batchDownloadBtn: getEl("batchDownloadBtn"),
-        deselectAllBtn: getEl("deselectAllBtn"),
-        batchTotalAmount: getEl("batchTotalAmount"),
-        batchCount: getEl("batchCount"),
+        itemsPerPageSelect: getEl("itemsPerPageSelect"),
+        
+        // 列表和分页
+        invoiceList: getEl("invoiceList"),
+        pagination: getEl("pagination"),
+        paginationControls: getEl("paginationControlsWrapper"),
+        noInvoicesMessage: getEl("noInvoicesMessage"),
+        loading: getEl("loading"),
+        
+        // 选择框和批量操作
         selectAllCheckbox: getEl("selectAllCheckbox"),
+        batchActions: getEl("batchActions"),
+        selectedCount: getEl("selectedCount"),
+        totalAmountValue: getEl("totalAmountValue"),
         batchStatusSelect: getEl("batchStatusSelect"),
         batchSetStatusBtn: getEl("batchSetStatusBtn"),
-        attachments: getEl("attachments"),
-        pagination: getEl("pagination"),
-        itemsPerPageSelect: getEl("itemsPerPageSelect"),
-        recognizeInvoiceNumberBtn: getEl("recognizeInvoiceNumberBtn"),
-        noInvoicesMessage: getEl("noInvoicesMessage"),
+        batchDownloadBtn: getEl("batchDownloadBtn"),
+        batchDeleteBtn: getEl("batchDeleteBtn"),
+        deselectAllBtn: getEl("deselectAllBtn"),
+        
+        // 模态框
         invoiceModal: getEl("invoiceModal"),
-        confirmDeleteModal: getEl("confirmDeleteModal"),
-        confirmDeleteBtn: getEl("confirmDeleteBtn"),
-        paginationControls: getEl("paginationControlsWrapper"),
-        totalAmountValue: getEl("totalAmountValue"),
-        selectedCount: getEl("selectedCount"),
+        modalTitle: getEl("modalTitle"),
+        invoiceForm: getEl("invoiceForm"),
+        
+        // 表单字段
         invoiceId: getEl("invoiceId"),
         invoiceNumber: getEl("invoiceNumber"),
         invoiceDate: getEl("invoiceDate"),
@@ -49,16 +98,26 @@ function initializeElements() {
         amount: getEl("amount"),
         status: getEl("status"),
         description: getEl("description"),
-        attachmentPreview: getEl("attachmentPreview")
+        attachments: getEl("attachments"),
+        attachmentPreview: getEl("attachmentPreview"),
+        
+        // 删除确认框
+        confirmDeleteModal: getEl("confirmDeleteModal"),
+        confirmDeleteBtn: getEl("confirmDeleteBtn")
     };
 }
 
-/* 状态变量 */
+/* ========== 应用状态 ========== */
 const state = {
+    // 选择相关
     selected: new Set(),
     totalAmount: 0,
+    
+    // 当前编辑
     currentAttachments: [],
     currentRecord: null,
+    
+    // 分页和排序
     currentPage: 1,
     itemsPerPage: 10,
     totalPages: 0,
@@ -66,133 +125,208 @@ const state = {
     sortOrder: "desc"
 };
 
-/* Bootstrap 实例 */
-let bsInvoiceModal;
-let bsConfirmDeleteModal;
+/* ========== Bootstrap 模态框实例 ========== */
+let bsInvoiceModal = null;
+let bsConfirmDeleteModal = null;
+let initRetryCount = 0;
 
-/* ---------- 初始化 ---------- */
+/* ========== 初始化 ========== */
+
+/**
+ * 安全初始化应用
+ * - 检查DOM元素是否加载
+ * - 初始化Bootstrap模态框
+ * - 设置事件监听器
+ * - 执行初始渲染
+ */
 function safeInitialize() {
-    // 首先初始化DOM元素引用
     initializeElements();
     
     // 检查关键元素是否加载完成
-    if (!els.invoiceModal || !els.confirmDeleteModal || !els.batchActions || !els.loginSection || !els.mainSection) {
-        // 元素还未加载，重试
-        console.warn("关键DOM元素还未加载，500ms后重试...");
-        setTimeout(safeInitialize, 500);
-        return;
+    const requiredElements = [
+        'invoiceModal', 'confirmDeleteModal', 'batchActions',
+        'loginSection', 'mainSection'
+    ];
+    
+    const allLoaded = requiredElements.every(key => els[key]);
+    
+    if (!allLoaded) {
+        initRetryCount++;
+        if (initRetryCount <= CONFIG.RETRY_MAX) {
+            console.warn(`DOM元素未加载，${CONFIG.TIMEOUT.INIT_RETRY}ms后重试 (${initRetryCount}/${CONFIG.RETRY_MAX})`);
+            setTimeout(safeInitialize, CONFIG.TIMEOUT.INIT_RETRY);
+            return;
+        } else {
+            console.error("初始化失败：无法加载关键DOM元素");
+            return;
+        }
     }
     
-    console.log("DOM元素加载完成，开始初始化...");
+    console.log("✓ DOM元素加载完成，开始初始化应用");
     
     try {
         bsInvoiceModal = new bootstrap.Modal(els.invoiceModal);
         bsConfirmDeleteModal = new bootstrap.Modal(els.confirmDeleteModal);
-
-        // 初始化事件监听
-        setupEventListeners();
         
-        // 初始渲染检查
+        setupEventListeners();
         renderUI();
+        
+        console.log("✓ 应用初始化完成");
     } catch (e) {
         console.error("初始化过程中出错：", e);
+        showToast("应用初始化失败，请刷新页面重试", 'danger');
     }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // 使用 setTimeout 确保在事件循环的下一个周期执行
-    setTimeout(safeInitialize, 100);
+    setTimeout(safeInitialize, CONFIG.TIMEOUT.INIT_DELAY);
 });
 
-// 备用方案：如果 DOMContentLoaded 没有触发，使用 readystatechange
+// 备用方案
 document.addEventListener("readystatechange", () => {
     if (document.readyState === "interactive" && !bsInvoiceModal) {
-        console.log("Document is interactive");
         safeInitialize();
     }
 });
 
-/* ---------- 事件监听设置 (集中管理) ---------- */
+/* ========== 事件监听设置 ========== */
+
+/**
+ * 设置所有事件监听器
+ * 集中管理以便维护和调试
+ */
 function setupEventListeners() {
-    // 登录
+    // ===== 认证事件 =====
     if (els.loginForm) {
-        els.loginForm.addEventListener("submit", async e => {
-            e.preventDefault();
-            const email = getEl("email").value, pass = getEl("password").value;
-            try {
-                await pb.collection("users").authWithPassword(email, pass);
-                renderUI();
-            } catch (err) {
-                showToast("登录失败：" + err.message, 'danger');
-            }
-        });
+        els.loginForm.addEventListener("submit", handleLogin);
+    }
+    if (els.logoutBtn) {
+        els.logoutBtn.onclick = handleLogout;
     }
 
-    // 退出
-    if (els.logoutBtn) els.logoutBtn.onclick = () => { pb.authStore.clear(); renderUI(); };
+    // ===== 模态框事件 =====
+    if (els.confirmDeleteBtn) {
+        els.confirmDeleteBtn.addEventListener('click', handleDelete);
+    }
+    if (els.invoiceForm) {
+        els.invoiceForm.addEventListener("submit", handleSaveInvoice);
+    }
 
-    // 确认删除
-    if (els.confirmDeleteBtn) els.confirmDeleteBtn.addEventListener('click', handleDelete);
-
-    // 表单提交
-    if (els.invoiceForm) els.invoiceForm.addEventListener("submit", handleSaveInvoice);
-
-    // 搜索与筛选
-    if (els.searchInput) els.searchInput.oninput = debounce(() => { state.currentPage = 1; loadInvoices(); }, 300);
-    if (els.statusFilter) els.statusFilter.onchange = debounce(() => { state.currentPage = 1; loadInvoices(); }, 300);
-
-    // 排序表头点击 (只绑定一次)
-    document.querySelectorAll("th[data-sort-by]").forEach(th => {
-        th.addEventListener("click", () => {
-            const sortBy = th.dataset.sortBy;
-            // 切换排序
-            state.sortOrder = (state.sortBy === sortBy && state.sortOrder === "desc") ? "asc" : "desc";
-            state.sortBy = sortBy;
-
-            // 更新图标UI
-            updateSortIcons(th);
-            loadInvoices();
-        });
-    });
-
-    // 每页数量
-    if (els.itemsPerPageSelect) {
-        els.itemsPerPageSelect.onchange = () => {
-            state.itemsPerPage = parseInt(els.itemsPerPageSelect.value);
+    // ===== 搜索和筛选 =====
+    if (els.searchInput) {
+        els.searchInput.oninput = debounce(() => {
             state.currentPage = 1;
             loadInvoices();
-        };
+        }, CONFIG.TIMEOUT.SEARCH_DEBOUNCE);
+    }
+    if (els.statusFilter) {
+        els.statusFilter.onchange = debounce(() => {
+            state.currentPage = 1;
+            loadInvoices();
+        }, CONFIG.TIMEOUT.SEARCH_DEBOUNCE);
     }
 
-    // 批量操作
+    // ===== 排序 =====
+    document.querySelectorAll("th[data-sort-by]").forEach(th => {
+        th.addEventListener("click", handleSortClick);
+    });
+
+    // ===== 分页 =====
+    if (els.itemsPerPageSelect) {
+        els.itemsPerPageSelect.onchange = handlePageSizeChange;
+    }
+
+    // ===== 批量操作 =====
     if (els.batchDeleteBtn) els.batchDeleteBtn.onclick = confirmBatchDelete;
     if (els.batchSetStatusBtn) els.batchSetStatusBtn.onclick = handleBatchSetStatus;
     if (els.batchDownloadBtn) els.batchDownloadBtn.onclick = handleBatchDownload;
     if (els.deselectAllBtn) els.deselectAllBtn.onclick = deselectAll;
     if (els.selectAllCheckbox) els.selectAllCheckbox.onchange = handleSelectAll;
 
-    // 新增按钮
+    // ===== 按钮事件 =====
     if (els.addInvoiceBtn) els.addInvoiceBtn.onclick = () => openModal();
-
-    // 识别按钮
     if (els.recognizeInvoiceNumberBtn) els.recognizeInvoiceNumberBtn.onclick = handleRecognizePDF;
     
-    // 键盘快捷键
+    // ===== 全局快捷键 =====
     document.addEventListener("keydown", handleGlobalKeys);
 }
 
-/* ---------- 核心逻辑函数 ---------- */
+/**
+ * 处理登录
+ */
+async function handleLogin(e) {
+    e.preventDefault();
+    try {
+        const email = getEl("email")?.value;
+        const password = getEl("password")?.value;
+        
+        if (!email || !password) {
+            showToast("请输入邮箱和密码", 'warning');
+            return;
+        }
+        
+        await pb.collection("users").authWithPassword(email, password);
+        renderUI();
+    } catch (err) {
+        console.error("登录错误:", err);
+        showToast("登录失败：" + err.message, 'danger');
+    }
+}
 
+/**
+ * 处理登出
+ */
+function handleLogout() {
+    pb.authStore.clear();
+    state.selected.clear();
+    state.totalAmount = 0;
+    renderUI();
+}
+
+/**
+ * 处理排序列表头点击
+ */
+function handleSortClick(e) {
+    const th = e.currentTarget;
+    const sortBy = th.dataset.sortBy;
+    
+    // 切换排序方向
+    state.sortOrder = (state.sortBy === sortBy && state.sortOrder === "desc") ? "asc" : "desc";
+    state.sortBy = sortBy;
+    
+    updateSortIcons(th);
+    loadInvoices();
+}
+
+/**
+ * 处理每页显示数量变更
+ */
+function handlePageSizeChange() {
+    state.itemsPerPage = parseInt(els.itemsPerPageSelect.value);
+    state.currentPage = 1;
+    loadInvoices();
+}
+
+/* ========== 核心UI渲染函数 ========== */
+
+/**
+ * 渲染主UI - 显示/隐藏登录和主界面
+ */
 function renderUI() {
     if (pb.authStore.isValid) {
+        // 显示主界面
         if (els.loginSection) els.loginSection.style.display = "none";
         if (els.mainSection) els.mainSection.style.display = "";
         if (els.logoutBtn) els.logoutBtn.style.display = "";
         if (els.currentUserSpan) els.currentUserSpan.style.display = "";
         
+        // 显示用户信息
         const model = pb.authStore.model;
-        if (els.currentUserSpan) els.currentUserSpan.textContent = model ? model.email : "";
+        if (els.currentUserSpan && model) {
+            els.currentUserSpan.textContent = model.email;
+        }
         
+        // 设置头像
         if (model && els.currentAvatarImg) {
             els.currentAvatarImg.style.display = "";
             if (model.avatar) {
@@ -203,9 +337,11 @@ function renderUI() {
             }
         }
 
-        state.itemsPerPage = (els.itemsPerPageSelect && els.itemsPerPageSelect.value) ? parseInt(els.itemsPerPageSelect.value) : 10;
+        // 加载发票列表
+        state.itemsPerPage = (els.itemsPerPageSelect?.value) ? parseInt(els.itemsPerPageSelect.value) : 10;
         loadInvoices();
     } else {
+        // 显示登录界面
         if (els.loginSection) els.loginSection.style.display = "";
         if (els.mainSection) els.mainSection.style.display = "none";
         if (els.logoutBtn) els.logoutBtn.style.display = "none";
@@ -214,84 +350,99 @@ function renderUI() {
     }
 }
 
+/**
+ * 加载并显示发票列表
+ */
 async function loadInvoices() {
-    showLoader();
-    if (els.invoiceList) els.invoiceList.innerHTML = "";
-    
-    // 每次加载清除选中状态，防止操作已消失的数据
-    state.selected.clear();
-    state.totalAmount = 0;
-    updateBatchUI();
-    if (els.selectAllCheckbox) els.selectAllCheckbox.checked = false;
-
-    const filters = [];
-    if (els.searchInput && els.searchInput.value.trim()) {
-        const term = els.searchInput.value.trim();
-        filters.push(`invoice_number ~ "${term}" || vendor ~ "${term}" || description ~ "${term}"`);
-    }
-    if (els.statusFilter && els.statusFilter.value) filters.push(`status = "${els.statusFilter.value}"`);
-
     try {
+        showLoader();
+        if (els.invoiceList) els.invoiceList.innerHTML = "";
+        
+        // 重置选择状态
+        state.selected.clear();
+        state.totalAmount = 0;
+        updateBatchUI();
+        if (els.selectAllCheckbox) {
+            try {
+                els.selectAllCheckbox.checked = false;
+            } catch (e) {
+                console.warn("无法重置selectAllCheckbox");
+            }
+        }
+
+        // 构建过滤条件
+        const filters = [];
+        if (els.searchInput?.value) {
+            const term = els.searchInput.value.trim();
+            filters.push(`invoice_number ~ "${term}" || vendor ~ "${term}" || description ~ "${term}"`);
+        }
+        if (els.statusFilter?.value) {
+            filters.push(`status = "${els.statusFilter.value}"`);
+        }
+
+        // 请求数据
         const result = await pb.collection("invoices").getList(state.currentPage, state.itemsPerPage, {
             sort: `${state.sortOrder === "desc" ? "-" : ""}${state.sortBy}`,
             filter: filters.join(" && "),
             fields: "id,invoice_number,invoice_date,vendor,amount,status,description,attachments"
         });
 
+        // 渲染列表
         if (els.invoiceList) {
             result.items.forEach(r => els.invoiceList.appendChild(createInvoiceRow(r)));
         }
         
+        // 显示/隐藏无数据提示
         if (els.noInvoicesMessage) {
             els.noInvoicesMessage.style.display = result.items.length === 0 ? "" : "none";
         }
         
+        // 更新分页
         state.currentPage = result.page;
         state.totalPages = result.totalPages;
         renderPagination(result.totalItems);
     } catch (e) {
-        if(e.status !== 0) showToast("加载失败：" + e.message, 'danger'); // status 0 usually means aborted
+        if (e.status !== 0) {
+            console.error("加载发票失败:", e);
+            showToast("加载失败：" + e.message, 'danger');
+        }
+    } finally {
+        hideLoader();
     }
-    hideLoader();
 }
 
-/* ---------- 表格行渲染 ---------- */
-const statusMap = {
-    pending_application: "待申请",
-    in_invoicing: "开票中",
-    in_reimbursement: "报销中",
-    reimbursed: "已报销",
-};
-const statusColor = s => ({ pending_application: "secondary", in_invoicing: "warning", in_reimbursement: "primary", reimbursed: "success" }[s] || "secondary");
+/* ========== 表格行渲染 ========== */
 
+/**
+ * 创建发票表格行
+ */
 function createInvoiceRow(rec) {
     const tr = document.createElement("tr");
     tr.className = `invoice-row ${state.selected.has(rec.id) ? "selected" : ""}`;
     tr.dataset.id = rec.id;
     tr.dataset.amount = rec.amount;
 
+    // 使用textContent而不是innerHTML防止XSS
     tr.innerHTML = `
-    <td><input type="checkbox" class="row-select-checkbox" ${state.selected.has(rec.id) ? "checked" : ""}></td>
-    <td class="user-select-all">${rec.invoice_number}</td>
-    <td>${rec.invoice_date ? rec.invoice_date.slice(0, 10) : '-'}</td>
-    <td>${rec.vendor}</td>
-    <td>¥${Number(rec.amount).toFixed(2)}</td>
-    <td><span class="badge bg-${statusColor(rec.status)}">${statusMap[rec.status] || rec.status}</span></td>
-    <td class="text-truncate" style="max-width: 150px;" title="${rec.description || ''}">${rec.description || "-"}</td>
-    <td>${(rec.attachments || []).length === 0 ? "无" : (rec.attachments || []).map((_, i) => `<i class="bi bi-file-earmark-pdf-fill text-danger me-1" title="附件${i + 1}"></i>`).join("")}</td>
-    <td>
-      <button class="btn btn-sm btn-outline-primary me-2 edit-btn" title="编辑"><i class="bi bi-pencil"></i></button>
-      <button class="btn btn-sm btn-outline-danger delete-btn" title="删除"><i class="bi bi-trash"></i></button>
-    </td>`;
+        <td><input type="checkbox" class="row-select-checkbox" ${state.selected.has(rec.id) ? "checked" : ""}></td>
+        <td class="user-select-all">${escapeHtml(rec.invoice_number)}</td>
+        <td>${rec.invoice_date ? rec.invoice_date.slice(0, 10) : '-'}</td>
+        <td>${escapeHtml(rec.vendor)}</td>
+        <td>¥${Number(rec.amount).toFixed(2)}</td>
+        <td><span class="badge bg-${getStatusColor(rec.status)}">${STATUS_MAP[rec.status] || rec.status}</span></td>
+        <td class="text-truncate" style="max-width: 150px;" title="${escapeHtml(rec.description || '')}">${escapeHtml(rec.description || "-")}</td>
+        <td>${(rec.attachments || []).length === 0 ? "无" : (rec.attachments || []).map((_, i) => `<i class="bi bi-file-earmark-pdf-fill text-danger me-1" title="附件${i + 1}"></i>`).join("")}</td>
+        <td>
+            <button class="btn btn-sm btn-outline-primary me-2 edit-btn" title="编辑"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger delete-btn" title="删除"><i class="bi bi-trash"></i></button>
+        </td>`;
 
-    // 事件委托处理稍微麻烦，这里直接绑定也行，但注意 stopPropagation
     const checkbox = tr.querySelector(".row-select-checkbox");
     
-    // 点击行（除按钮外）切换选中
+    // 点击行切换选中
     tr.onclick = (e) => {
-        // 如果点击的是链接或输入框，不触发行选中
-        if(['INPUT', 'BUTTON', 'A', 'I'].includes(e.target.tagName)) return;
-        toggleSelect(rec.id, tr, checkbox); 
+        if (['INPUT', 'BUTTON', 'A', 'I'].includes(e.target.tagName)) return;
+        toggleSelect(rec.id, tr, checkbox);
     };
     
     checkbox.onclick = (e) => {
@@ -299,10 +450,39 @@ function createInvoiceRow(rec) {
         toggleSelect(rec.id, tr, checkbox);
     };
 
-    tr.querySelector(".edit-btn").onclick = (e) => { e.stopPropagation(); openModal(rec); };
-    tr.querySelector(".delete-btn").onclick = (e) => { e.stopPropagation(); confirmSingleDelete(rec.id); };
+    tr.querySelector(".edit-btn").onclick = (e) => {
+        e.stopPropagation();
+        openModal(rec);
+    };
+    
+    tr.querySelector(".delete-btn").onclick = (e) => {
+        e.stopPropagation();
+        confirmSingleDelete(rec.id);
+    };
 
     return tr;
+}
+
+/**
+ * 获取状态标签颜色
+ */
+function getStatusColor(status) {
+    return STATUS_COLORS[status] || "secondary";
+}
+
+/**
+ * HTML转义防止XSS
+ */
+function escapeHtml(text) {
+    if (!text) return "";
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
 }
 
 /* ---------- 选中逻辑 ---------- */
