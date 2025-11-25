@@ -71,52 +71,75 @@ let bsInvoiceModal;
 let bsConfirmDeleteModal;
 
 /* ---------- 初始化 ---------- */
-document.addEventListener("DOMContentLoaded", () => {
+function safeInitialize() {
     // 首先初始化DOM元素引用
     initializeElements();
     
     // 检查关键元素是否加载完成
-    if (!els.invoiceModal || !els.confirmDeleteModal) {
-        console.error("关键DOM元素未加载，请检查HTML文件");
+    if (!els.invoiceModal || !els.confirmDeleteModal || !els.batchActions) {
+        // 元素还未加载，重试
+        console.warn("关键DOM元素还未加载，500ms后重试...");
+        setTimeout(safeInitialize, 500);
         return;
     }
     
-    bsInvoiceModal = new bootstrap.Modal(els.invoiceModal);
-    bsConfirmDeleteModal = new bootstrap.Modal(els.confirmDeleteModal);
-
-    // 初始化事件监听
-    setupEventListeners();
+    console.log("DOM元素加载完成，开始初始化...");
     
-    // 初始渲染检查
-    renderUI();
+    try {
+        bsInvoiceModal = new bootstrap.Modal(els.invoiceModal);
+        bsConfirmDeleteModal = new bootstrap.Modal(els.confirmDeleteModal);
+
+        // 初始化事件监听
+        setupEventListeners();
+        
+        // 初始渲染检查
+        renderUI();
+    } catch (e) {
+        console.error("初始化过程中出错：", e);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // 使用 setTimeout 确保在事件循环的下一个周期执行
+    setTimeout(safeInitialize, 100);
+});
+
+// 备用方案：如果 DOMContentLoaded 没有触发，使用 readystatechange
+document.addEventListener("readystatechange", () => {
+    if (document.readyState === "interactive" && !bsInvoiceModal) {
+        console.log("Document is interactive");
+        safeInitialize();
+    }
 });
 
 /* ---------- 事件监听设置 (集中管理) ---------- */
 function setupEventListeners() {
     // 登录
-    els.loginForm.addEventListener("submit", async e => {
-        e.preventDefault();
-        const email = getEl("email").value, pass = getEl("password").value;
-        try {
-            await pb.collection("users").authWithPassword(email, pass);
-            renderUI();
-        } catch (err) {
-            showToast("登录失败：" + err.message, 'danger');
-        }
-    });
+    if (els.loginForm) {
+        els.loginForm.addEventListener("submit", async e => {
+            e.preventDefault();
+            const email = getEl("email").value, pass = getEl("password").value;
+            try {
+                await pb.collection("users").authWithPassword(email, pass);
+                renderUI();
+            } catch (err) {
+                showToast("登录失败：" + err.message, 'danger');
+            }
+        });
+    }
 
     // 退出
-    els.logoutBtn.onclick = () => { pb.authStore.clear(); renderUI(); };
+    if (els.logoutBtn) els.logoutBtn.onclick = () => { pb.authStore.clear(); renderUI(); };
 
     // 确认删除
-    els.confirmDeleteBtn.addEventListener('click', handleDelete);
+    if (els.confirmDeleteBtn) els.confirmDeleteBtn.addEventListener('click', handleDelete);
 
     // 表单提交
-    els.invoiceForm.addEventListener("submit", handleSaveInvoice);
+    if (els.invoiceForm) els.invoiceForm.addEventListener("submit", handleSaveInvoice);
 
     // 搜索与筛选
-    els.searchInput.oninput = debounce(() => { state.currentPage = 1; loadInvoices(); }, 300);
-    els.statusFilter.onchange = debounce(() => { state.currentPage = 1; loadInvoices(); }, 300);
+    if (els.searchInput) els.searchInput.oninput = debounce(() => { state.currentPage = 1; loadInvoices(); }, 300);
+    if (els.statusFilter) els.statusFilter.onchange = debounce(() => { state.currentPage = 1; loadInvoices(); }, 300);
 
     // 排序表头点击 (只绑定一次)
     document.querySelectorAll("th[data-sort-by]").forEach(th => {
@@ -133,24 +156,26 @@ function setupEventListeners() {
     });
 
     // 每页数量
-    els.itemsPerPageSelect.onchange = () => {
-        state.itemsPerPage = parseInt(els.itemsPerPageSelect.value);
-        state.currentPage = 1;
-        loadInvoices();
-    };
+    if (els.itemsPerPageSelect) {
+        els.itemsPerPageSelect.onchange = () => {
+            state.itemsPerPage = parseInt(els.itemsPerPageSelect.value);
+            state.currentPage = 1;
+            loadInvoices();
+        };
+    }
 
     // 批量操作
-    els.batchDeleteBtn.onclick = confirmBatchDelete;
-    els.batchSetStatusBtn.onclick = handleBatchSetStatus;
-    els.batchDownloadBtn.onclick = handleBatchDownload;
-    els.deselectAllBtn.onclick = deselectAll;
-    els.selectAllCheckbox.onchange = handleSelectAll;
+    if (els.batchDeleteBtn) els.batchDeleteBtn.onclick = confirmBatchDelete;
+    if (els.batchSetStatusBtn) els.batchSetStatusBtn.onclick = handleBatchSetStatus;
+    if (els.batchDownloadBtn) els.batchDownloadBtn.onclick = handleBatchDownload;
+    if (els.deselectAllBtn) els.deselectAllBtn.onclick = deselectAll;
+    if (els.selectAllCheckbox) els.selectAllCheckbox.onchange = handleSelectAll;
 
     // 新增按钮
-    els.addInvoiceBtn.onclick = () => openModal();
+    if (els.addInvoiceBtn) els.addInvoiceBtn.onclick = () => openModal();
 
     // 识别按钮
-    els.recognizeInvoiceNumberBtn.onclick = handleRecognizePDF;
+    if (els.recognizeInvoiceNumberBtn) els.recognizeInvoiceNumberBtn.onclick = handleRecognizePDF;
     
     // 键盘快捷键
     document.addEventListener("keydown", handleGlobalKeys);
@@ -160,15 +185,15 @@ function setupEventListeners() {
 
 function renderUI() {
     if (pb.authStore.isValid) {
-        els.loginSection.style.display = "none";
-        els.mainSection.style.display = "";
-        els.logoutBtn.style.display = "";
-        els.currentUserSpan.style.display = "";
+        if (els.loginSection) els.loginSection.style.display = "none";
+        if (els.mainSection) els.mainSection.style.display = "";
+        if (els.logoutBtn) els.logoutBtn.style.display = "";
+        if (els.currentUserSpan) els.currentUserSpan.style.display = "";
         
         const model = pb.authStore.model;
-        els.currentUserSpan.textContent = model ? model.email : "";
+        if (els.currentUserSpan) els.currentUserSpan.textContent = model ? model.email : "";
         
-        if (model) {
+        if (model && els.currentAvatarImg) {
             els.currentAvatarImg.style.display = "";
             if (model.avatar) {
                 els.currentAvatarImg.src = pb.files.getURL(model, model.avatar);
@@ -178,33 +203,33 @@ function renderUI() {
             }
         }
 
-        state.itemsPerPage = parseInt(els.itemsPerPageSelect.value) || 10;
+        state.itemsPerPage = (els.itemsPerPageSelect && els.itemsPerPageSelect.value) ? parseInt(els.itemsPerPageSelect.value) : 10;
         loadInvoices();
     } else {
-        els.loginSection.style.display = "";
-        els.mainSection.style.display = "none";
-        els.logoutBtn.style.display = "none";
-        els.currentUserSpan.style.display = "none";
-        els.currentAvatarImg.style.display = "none";
+        if (els.loginSection) els.loginSection.style.display = "";
+        if (els.mainSection) els.mainSection.style.display = "none";
+        if (els.logoutBtn) els.logoutBtn.style.display = "none";
+        if (els.currentUserSpan) els.currentUserSpan.style.display = "none";
+        if (els.currentAvatarImg) els.currentAvatarImg.style.display = "none";
     }
 }
 
 async function loadInvoices() {
     showLoader();
-    els.invoiceList.innerHTML = "";
+    if (els.invoiceList) els.invoiceList.innerHTML = "";
     
     // 每次加载清除选中状态，防止操作已消失的数据
     state.selected.clear();
     state.totalAmount = 0;
     updateBatchUI();
-    els.selectAllCheckbox.checked = false;
+    if (els.selectAllCheckbox) els.selectAllCheckbox.checked = false;
 
     const filters = [];
-    if (els.searchInput.value.trim()) {
+    if (els.searchInput && els.searchInput.value.trim()) {
         const term = els.searchInput.value.trim();
         filters.push(`invoice_number ~ "${term}" || vendor ~ "${term}" || description ~ "${term}"`);
     }
-    if (els.statusFilter.value) filters.push(`status = "${els.statusFilter.value}"`);
+    if (els.statusFilter && els.statusFilter.value) filters.push(`status = "${els.statusFilter.value}"`);
 
     try {
         const result = await pb.collection("invoices").getList(state.currentPage, state.itemsPerPage, {
@@ -213,9 +238,13 @@ async function loadInvoices() {
             fields: "id,invoice_number,invoice_date,vendor,amount,status,description,attachments"
         });
 
-        result.items.forEach(r => els.invoiceList.appendChild(createInvoiceRow(r)));
+        if (els.invoiceList) {
+            result.items.forEach(r => els.invoiceList.appendChild(createInvoiceRow(r)));
+        }
         
-        els.noInvoicesMessage.style.display = result.items.length === 0 ? "" : "none";
+        if (els.noInvoicesMessage) {
+            els.noInvoicesMessage.style.display = result.items.length === 0 ? "" : "none";
+        }
         
         state.currentPage = result.page;
         state.totalPages = result.totalPages;
@@ -682,13 +711,15 @@ function updateSortIcons(clickedTh) {
 
 function renderPagination(totalItems) {
     const p = els.pagination;
+    if (!p) return;
+    
     p.innerHTML = "";
     
     if (totalItems === 0) {
-        els.paginationControls.style.display = "none";
+        if (els.paginationControls) els.paginationControls.style.display = "none";
         return;
     }
-    els.paginationControls.style.display = "flex";
+    if (els.paginationControls) els.paginationControls.style.display = "flex";
     
     const createPageItem = (page, text, isActive = false, isDisabled = false) => {
         const li = document.createElement("li");
@@ -790,8 +821,13 @@ function handleGlobalKeys(e) {
     }
 }
 
-function showLoader() { els.loading.style.display = ""; }
-function hideLoader() { els.loading.style.display = "none"; }
+function showLoader() { 
+    if (els.loading) els.loading.style.display = ""; 
+}
+
+function hideLoader() { 
+    if (els.loading) els.loading.style.display = "none"; 
+}
 
 function showToast(message, type = 'info') {
     const container = document.querySelector('.toast-container');
