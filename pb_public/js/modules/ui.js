@@ -216,10 +216,10 @@ export function renderPagination(totalItems, onPageChange) {
     p.innerHTML = "";
 
     if (totalItems === 0) {
-        els.paginationControls.style.display = "none";
+        els.pagination.style.visibility = "hidden";
         return;
     }
-    els.paginationControls.style.display = "flex";
+    els.pagination.style.visibility = "visible";
 
     const createPageItem = (page, text, isActive = false, isDisabled = false) => {
         const li = document.createElement("li");
