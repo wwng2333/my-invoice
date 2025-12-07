@@ -46,6 +46,13 @@ function safeInitialize() {
         
         initialized = true;
         console.log("✓ Application initialized successfully.");
+
+        // Hide the loading overlay
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('hidden');
+        }
+
     } catch (e) {
         console.error("Error during initialization:", e);
         ui.showToast("Application failed to initialize. Please refresh.", 'danger');
@@ -476,9 +483,7 @@ function handleGlobalKeys(e) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(safeInitialize, CONFIG.TIMEOUT.INIT_DELAY);
-});
+document.addEventListener("DOMContentLoaded", safeInitialize);
 
 flatpickr("#invoiceDate", {
     dateFormat: "Y-m-d",
