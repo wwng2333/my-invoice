@@ -457,19 +457,13 @@ function handleSelectAll() {
 }
 
 function handleGlobalKeys(e) {
-    const activeElement = document.activeElement;
-    const isInputFocused = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA');
-
     if (ui.els.invoiceModal.classList.contains('show')) return;
 
     if (e.ctrlKey && e.key === "a") {
-        // Fix: Do not interfere with text selection in inputs
-        if (isInputFocused) return; 
-
         e.preventDefault();
         const allCheckboxes = document.querySelectorAll(".row-select-checkbox");
-        if (allCheckboxes.length === 0) return;
-
+        if(allCheckboxes.length === 0) return;
+        
         const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
         if (allChecked) {
             deselectAll();
@@ -483,13 +477,9 @@ function handleGlobalKeys(e) {
         e.preventDefault();
         ui.els.searchInput.focus();
     }
-
+    
     if (e.key === "Escape") {
-        if (isInputFocused) {
-            activeElement.blur();
-        } else {
-            deselectAll();
-        }
+        deselectAll();
     }
 }
 
