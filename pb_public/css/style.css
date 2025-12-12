@@ -58,7 +58,7 @@ body.dark-mode {
     --card-bg: #1f2937;
     --card-bg-secondary: #374151;
     --border-color: #374151;
-    --muted-color: #9ca3af;
+    --muted-color: #cbd5e1;
     --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
     --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
     --navbar-bg: rgba(31, 41, 55, 0.8);
@@ -401,5 +401,20 @@ body.dark-mode .btn-close {
     color: var(--muted-color);
     border-color: var(--border-color);
     opacity: 0.5;
+}
+body.dark-mode #noInvoicesMessage {
+    color: var(--fg-color) !important; /* Ensure visibility in dark mode */
+}
+
+#itemsPerPageSelect {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: none;
+    padding-right: 1.5rem; /* Adjust as needed */
+}
+
+#itemsPerPageSelect::-ms-expand {
+    display: none;
 }
 
