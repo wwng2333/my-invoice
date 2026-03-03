@@ -35,6 +35,15 @@
 - ✔️ 用户输入验证
 - 🔄 完善的错误处理
 
+## 🩺 最近修复 (2026-03-03)
+
+- 🔧 修复模块循环依赖：将 `CONFIG` 提取到 `pb_public/js/config.js`，避免 `app.js` 与 `api.js` 的静态循环导入导致未初始化错误。
+- 🧭 修正时序问题：将 `flatpickr` 的初始化从模块顶层移动到 `safeInitialize()`，确保 DOM 元素就绪后再初始化日期选择器。
+- 🔁 减少模块耦合：将 `ui.js` 中的 `STATUS_MAP` 与 `STATUS_COLORS` 导出，且将 `api.js` 中对通知（toast）的静态依赖改为按需动态导入，打破 `api ↔ ui` 的双向静态依赖。
+- ✅ 增加空值保护：`api.saveInvoice()` 在访问 `getAuthModel().id` 前做了登录检测，避免未登录时抛出异常。
+
+> 这些修复主要针对前端模块化与初始化时序问题，建议在本地或测试环境手动验证登录、加载发票、打开/保存发票模态窗和附件功能。
+
 ## 🛠️ 技术栈
 
 | 技术 | 说明 |
@@ -123,22 +132,7 @@ my-invoice/
 | [OPTIMIZATION_REPORT.md](./OPTIMIZATION_REPORT.md) | 详细的代码优化报告，包含改进对比 |
 | [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) | 开发指南，包含函数参考和快速上手 |
 
-## 🔧 配置说明
 
-主要配置位置：`pb_public/js/app.js`
-
-```javascript
-const CONFIG = {
-    PB_URL: "https://invoice.csgo.ovh/",  // PocketBase服务器地址
-    TIMEOUT: {
-        INIT_RETRY: 500,      // DOM初始化重试间隔(ms)
-        INIT_DELAY: 100,      // 初始化延迟(ms)
-        SEARCH_DEBOUNCE: 300  // 搜索防抖延迟(ms)
-    },
-    PAGE_SIZES: [10, 25, 50, 9999],
-    RETRY_MAX: 3              // 最大重试次数
-};
-```
 
 ## 🐛 故障排查
 
@@ -156,22 +150,23 @@ const CONFIG = {
 - 查看浏览器控制台错误信息
 - 确保PDF.js已正确加载
 
-## 🔐 安全性
+## 🔧 配置说明
 
-- ✅ XSS防护：所有用户输入都经过HTML转义
-- ✅ 输入验证：表单提交前进行验证
-- ✅ HTTPS：生产环境使用HTTPS
-- ✅ 错误处理：不向用户暴露技术细节
+主要配置位置：`pb_public/js/config.js`（已从 `app.js` 提取以避免循环依赖）
 
-## 🤝 贡献
-
-欢迎提交 Issue 或 Pull Request！
-
-如有建议或发现bug，请：
-1. 检查[已有Issue](https://github.com/wwng2333/my-invoice/issues)
-2. 创建新Issue或提交PR
-3. 提供详细的问题描述
-
+```javascript
+// pb_public/js/config.js
+export const CONFIG = {
+  PB_URL: "https://invoice.csgo.ovh/",  // PocketBase服务器地址
+  TIMEOUT: {
+    INIT_RETRY: 500,      // DOM初始化重试间隔(ms)
+    INIT_DELAY: 100,      // 初始化延迟(ms)
+    SEARCH_DEBOUNCE: 300  // 搜索防抖延迟(ms)
+  },
+  PAGE_SIZES: [10, 25, 50, 9999],
+  RETRY_MAX: 3              // 最大重试次数
+};
+```
 ## 📝 更新日志
 
 ### v1.0.1 (2025-11-25)
@@ -192,4 +187,4 @@ MIT License - 详见 [LICENSE](./LICENSE) 文件
 
 **需要帮助？** 查看 [开发指南](./DEVELOPMENT_GUIDE.md) 或提交 [Issue](https://github.com/wwng2333/my-invoice/issues)
 
-**最后更新**: 2025年11月25日 | **维护者**: [@wwng2333](https://github.com/wwng2333)
+**最后更新**: 2026年03月03日 | **维护者**: [@wwng2333](https://github.com/wwng2333)
