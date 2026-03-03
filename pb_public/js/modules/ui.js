@@ -4,14 +4,14 @@ import { getFileUrl, getAuthModel } from './api.js';
 
 export let els = {}; // To be initialized
 
-const STATUS_MAP = {
+export const STATUS_MAP = {
     pending_application: "待申请",
     in_invoicing: "开票中",
     in_reimbursement: "报销中",
     reimbursed: "已报销"
 };
 
-const STATUS_COLORS = {
+export const STATUS_COLORS = {
     pending_application: "secondary",
     in_invoicing: "warning",
     in_reimbursement: "primary",

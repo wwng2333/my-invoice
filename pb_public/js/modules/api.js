@@ -1,6 +1,5 @@
-import { CONFIG } from '../app.js';
+import { CONFIG } from '../config.js';
 import { state } from './state.js';
-import { showToast } from './ui.js';
 
 const pb = new PocketBase(CONFIG.PB_URL);
 
@@ -14,10 +13,15 @@ export async function login(email, password) {
             // Don't show a toast for intentional cancellations
             return false;
         }
-        if (err.message.includes('autocancelled')) {
-            showToast("Previous login attempt cancelled. Please try again.", 'warning');
-        } else {
-            showToast("Login failed: " + err.message, 'danger');
+        try {
+            const { showToast } = await import('./ui.js');
+            if (err.message.includes('autocancelled')) {
+                showToast("Previous login attempt cancelled. Please try again.", 'warning');
+            } else {
+                showToast("Login failed: " + err.message, 'danger');
+            }
+        } catch (e) {
+            console.warn('showToast not available:', e);
         }
         return false;
     }
@@ -62,7 +66,7 @@ export async function getInvoices() {
     } catch (e) {
         if (e.status !== 0) {
             console.error("Failed to load invoices:", e);
-            showToast("Failed to load: " + e.message, 'danger');
+            try { const { showToast } = await import('./ui.js'); showToast("Failed to load: " + e.message, 'danger'); } catch(_) { }
         }
         return null;
     }
@@ -79,17 +83,22 @@ export async function getInvoice(id) {
 
 export async function saveInvoice(id, formData) {
     try {
-        formData.append("user", getAuthModel().id);
+        const model = getAuthModel();
+        if (!model) {
+            try { const { showToast } = await import('./ui.js'); showToast("Not authenticated. Please login.", 'warning'); } catch(_) { }
+            return false;
+        }
+        formData.append("user", model.id);
         if (id) {
             await pb.collection("invoices").update(id, formData);
-            showToast("Update successful", 'success');
+            try { const { showToast } = await import('./ui.js'); showToast("Update successful", 'success'); } catch(_) { }
         } else {
             await pb.collection("invoices").create(formData);
-            showToast("Creation successful", 'success');
+            try { const { showToast } = await import('./ui.js'); showToast("Creation successful", 'success'); } catch(_) { }
         }
         return true;
     } catch (e) {
-        showToast("Save failed: " + e.message, 'danger');
+        try { const { showToast } = await import('./ui.js'); showToast("Save failed: " + e.message, 'danger'); } catch(_) { }
         return false;
     }
 }
@@ -99,7 +108,7 @@ export async function deleteInvoice(id) {
         await pb.collection("invoices").delete(id);
         return true;
     } catch (e) {
-        showToast("Deletion failed: " + e.message, 'danger');
+        try { const { showToast } = await import('./ui.js'); showToast("Deletion failed: " + e.message, 'danger'); } catch(_) { }
         return false;
     }
 }
@@ -109,10 +118,10 @@ export async function batchUpdateInvoices(ids, newStatus) {
         await Promise.all([...ids].map(id =>
             pb.collection("invoices").update(id, { status: newStatus })
         ));
-        showToast("Batch update successful", 'success');
+        try { const { showToast } = await import('./ui.js'); showToast("Batch update successful", 'success'); } catch(_) { }
         return true;
     } catch (e) {
-        showToast("Operation failed: " + e.message, 'danger');
+        try { const { showToast } = await import('./ui.js'); showToast("Operation failed: " + e.message, 'danger'); } catch(_) { }
         return false;
     }
 }

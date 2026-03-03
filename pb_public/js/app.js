@@ -2,17 +2,7 @@ import { state } from './modules/state.js';
 import { debounce, convertChineseToNumber } from './modules/utils.js';
 import * as api from './modules/api.js';
 import * as ui from './modules/ui.js';
-
-export const CONFIG = {
-    PB_URL: "https://invoice.csgo.ovh/",
-    TIMEOUT: {
-        INIT_RETRY: 500,
-        INIT_DELAY: 100,
-        SEARCH_DEBOUNCE: 300
-    },
-    PAGE_SIZES: [10, 25, 50, 9999],
-    RETRY_MAX: 3
-};
+import { CONFIG } from './config.js';
 
 let bsInvoiceModal = null;
 let bsConfirmDeleteModal = null;
@@ -40,9 +30,19 @@ function safeInitialize() {
     try {
         bsInvoiceModal = new bootstrap.Modal(ui.els.invoiceModal);
         bsConfirmDeleteModal = new bootstrap.Modal(ui.els.confirmDeleteModal);
-        
         setupEventListeners();
         ui.renderUI(loadInvoices);
+
+        // Initialize flatpickr after elements are available to avoid timing issues.
+        try {
+            flatpickr(ui.els.invoiceDate, {
+                dateFormat: "Y-m-d",
+                locale: flatpickr.l10ns.zh,
+                allowInput: true 
+            });
+        } catch (err) {
+            console.warn('flatpickr initialization skipped:', err);
+        }
         
         initialized = true;
         console.log("✓ Application initialized successfully.");
@@ -484,9 +484,3 @@ function handleGlobalKeys(e) {
 }
 
 document.addEventListener("DOMContentLoaded", safeInitialize);
-
-flatpickr("#invoiceDate", {
-    dateFormat: "Y-m-d",
-    locale: flatpickr.l10ns.zh,
-    allowInput: true 
-});
