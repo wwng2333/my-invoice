@@ -3,6 +3,15 @@ import { state } from './state.js';
 
 const pb = new PocketBase(CONFIG.PB_URL);
 
+function handleAuthError(e) {
+    if (e.status === 401) {
+        pb.authStore.clear();
+        document.dispatchEvent(new CustomEvent('auth:expired'));
+        return true;
+    }
+    return false;
+}
+
 export async function login(email, password) {
     try {
         await pb.collection("users").authWithPassword(email, password);
@@ -64,6 +73,7 @@ export async function getInvoices() {
         });
         return result;
     } catch (e) {
+        if (handleAuthError(e)) return null;
         if (e.status !== 0) {
             console.error("Failed to load invoices:", e);
             try { const { showToast } = await import('./ui.js'); showToast("Failed to load: " + e.message, 'danger'); } catch(_) { }
@@ -76,6 +86,7 @@ export async function getInvoice(id) {
     try {
         return await pb.collection("invoices").getOne(id);
     } catch (e) {
+        if (handleAuthError(e)) return null;
         console.error("Failed to get full record:", e);
         return null;
     }
@@ -98,6 +109,7 @@ export async function saveInvoice(id, formData) {
         }
         return true;
     } catch (e) {
+        if (handleAuthError(e)) return false;
         try { const { showToast } = await import('./ui.js'); showToast("Save failed: " + e.message, 'danger'); } catch(_) { }
         return false;
     }
@@ -108,6 +120,7 @@ export async function deleteInvoice(id) {
         await pb.collection("invoices").delete(id);
         return true;
     } catch (e) {
+        if (handleAuthError(e)) return false;
         try { const { showToast } = await import('./ui.js'); showToast("Deletion failed: " + e.message, 'danger'); } catch(_) { }
         return false;
     }
@@ -121,6 +134,7 @@ export async function batchUpdateInvoices(ids, newStatus) {
         try { const { showToast } = await import('./ui.js'); showToast("Batch update successful", 'success'); } catch(_) { }
         return true;
     } catch (e) {
+        if (handleAuthError(e)) return false;
         try { const { showToast } = await import('./ui.js'); showToast("Operation failed: " + e.message, 'danger'); } catch(_) { }
         return false;
     }

@@ -63,6 +63,13 @@ function setupEventListeners() {
     ui.els.loginForm.addEventListener("submit", handleLogin);
     ui.els.logoutBtn.addEventListener('click', handleLogout);
 
+    document.addEventListener('auth:expired', () => {
+        state.selected.clear();
+        state.totalAmount = 0;
+        ui.renderUI(loadInvoices);
+        ui.showToast("登录已过期，请重新登录", 'warning');
+    });
+
     ui.els.invoiceForm.addEventListener("submit", handleSaveInvoice);
     ui.els.confirmDeleteBtn.addEventListener('click', handleDelete);
 
