@@ -9,6 +9,7 @@ let bsConfirmDeleteModal = null;
 let initRetryCount = 0;
 let initialized = false;
 let isLoggingIn = false;
+let loadRequestId = 0;
 
 function safeInitialize() {
     if (initialized) return;
@@ -55,7 +56,7 @@ function safeInitialize() {
 
     } catch (e) {
         console.error("Error during initialization:", e);
-        ui.showToast("Application failed to initialize. Please refresh.", 'danger');
+        ui.showToast("应用初始化失败，请刷新页面。", 'danger');
     }
 }
 
@@ -119,11 +120,11 @@ async function handleLogin(e) {
 
     if (!email || !password) {
 		isLoggingIn = false;
-        return ui.showToast("Please enter email and password", 'warning');
+        return ui.showToast("请输入邮箱和密码", 'warning');
     }
 
     loginButton.disabled = true;
-    loginButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+    loginButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 登录中...';
 
     try {
         if (await api.login(email, password)) {
@@ -160,15 +161,21 @@ function handlePageSizeChange() {
 }
 
 async function loadInvoices() {
+    const requestId = ++loadRequestId;
     ui.showLoader();
     ui.els.invoiceList.innerHTML = "";
-    
+
     state.selected.clear();
     state.totalAmount = 0;
     ui.updateBatchUI();
     ui.els.selectAllCheckbox.checked = false;
 
-    const result = await api.getInvoices();
+    const result = await api.getInvoices(
+        ui.els.searchInput.value.trim(),
+        ui.els.statusFilter.value
+    );
+
+    if (requestId !== loadRequestId) { ui.hideLoader(); return; }
 
     if (result) {
         const fragment = document.createDocumentFragment();
@@ -197,12 +204,12 @@ function toggleSelect(id, row, checkbox) {
         state.selected.delete(id);
         row.classList.remove("selected");
         checkbox.checked = false;
-        state.totalAmount -= amount;
+        state.totalAmount = parseFloat((state.totalAmount - amount).toFixed(2));
     } else {
         state.selected.add(id);
         row.classList.add("selected");
         checkbox.checked = true;
-        state.totalAmount += amount;
+        state.totalAmount = parseFloat((state.totalAmount + amount).toFixed(2));
     }
     ui.updateBatchUI();
     checkSelectAllStatus();
@@ -224,16 +231,17 @@ async function openModal(rec = null) {
     ui.els.invoiceId.value = rec ? rec.id : "";
     state.currentAttachments = rec?.attachments ? [...rec.attachments] : [];
     ui.els.attachmentPreview.innerHTML = "";
-    ui.els.modalTitle.textContent = rec ? "Edit Invoice" : "Add Invoice";
+    ui.els.modalTitle.textContent = rec ? "编辑发票" : "新增发票";
 
     if (rec) {
         state.currentRecord = await api.getInvoice(rec.id) || rec;
-        ui.els.invoiceNumber.value = rec.invoice_number;
-        ui.els.invoiceDate.value = rec.invoice_date ? rec.invoice_date.slice(0, 10) : "";
-        ui.els.vendor.value = rec.vendor;
-        ui.els.amount.value = rec.amount;
-        ui.els.status.value = rec.status;
-        ui.els.description.value = rec.description || "";
+        const r = state.currentRecord;
+        ui.els.invoiceNumber.value = r.invoice_number;
+        ui.els.invoiceDate.value = r.invoice_date ? r.invoice_date.slice(0, 10) : "";
+        ui.els.vendor.value = r.vendor;
+        ui.els.amount.value = r.amount;
+        ui.els.status.value = r.status;
+        ui.els.description.value = r.description || "";
         ui.renderAttachmentPreview();
     } else {
         state.currentRecord = null;
@@ -243,16 +251,16 @@ async function openModal(rec = null) {
 
 async function handleRecognizePDF() {
     const files = ui.els.attachments.files;
-    if (files.length === 0) return ui.showToast("Please select a PDF file first!", 'warning');
+    if (files.length === 0) return ui.showToast("请先选择 PDF 文件！", 'warning');
     
     const btn = ui.els.recognizeInvoiceNumberBtn;
     const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Recognizing...`;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> 识别中...`;
 
     try {
         const file = files[0];
-        if (file.type !== "application/pdf") throw new Error("Must be a PDF file");
+        if (file.type !== "application/pdf") throw new Error("请选择 PDF 文件");
 
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, cMapUrl: './cmaps/', cMapPacked: true }).promise;
@@ -295,11 +303,11 @@ async function handleRecognizePDF() {
             }
         }
 
-        ui.showToast("Recognition complete, please verify the information.", 'success');
+        ui.showToast("识别完成，请核对信息。", 'success');
 
     } catch (error) {
         console.error(error);
-        ui.showToast("Recognition failed: " + error.message, 'warning');
+        ui.showToast("识别失败：" + error.message, 'warning');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -336,7 +344,7 @@ function confirmSingleDelete(id) {
 }
 
 function confirmBatchDelete() {
-    if (!state.selected.size) return ui.showToast("Please select invoices", 'warning');
+    if (!state.selected.size) return ui.showToast("请先选择发票", 'warning');
     ui.els.confirmDeleteBtn.dataset.deleteType = 'batch';
     bsConfirmDeleteModal.show();
 }
@@ -351,20 +359,20 @@ async function handleDelete() {
         const deletions = [...state.selected].map(id => api.deleteInvoice(id));
         const results = await Promise.all(deletions);
         success = results.every(r => r);
-        if (success) deselectAll();
+        if (results.some(r => r)) deselectAll();
     }
 
+    bsConfirmDeleteModal.hide();
     if (success) {
-        ui.showToast("Deletion successful", 'success');
-        bsConfirmDeleteModal.hide();
-        loadInvoices();
+        ui.showToast("删除成功", 'success');
     }
+    loadInvoices();
     ui.hideLoader();
 }
 
 async function handleBatchSetStatus() {
     const newStatus = ui.els.batchStatusSelect.value;
-    if (!newStatus) return ui.showToast("Please select a status", 'warning');
+    if (!newStatus) return ui.showToast("请选择要设置的状态", 'warning');
     if (!state.selected.size) return;
 
     ui.showLoader();
@@ -452,12 +460,12 @@ function handleSelectAll() {
             state.selected.add(id);
             row.classList.add("selected");
             checkbox.checked = true;
-            state.totalAmount += amount;
+            state.totalAmount = parseFloat((state.totalAmount + amount).toFixed(2));
         } else if (!isChecked && isSelected) {
             state.selected.delete(id);
             row.classList.remove("selected");
             checkbox.checked = false;
-            state.totalAmount -= amount;
+            state.totalAmount = parseFloat((state.totalAmount - amount).toFixed(2));
         }
     });
     ui.updateBatchUI();

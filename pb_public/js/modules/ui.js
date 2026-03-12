@@ -82,8 +82,8 @@ export function renderUI(loadInvoicesCallback) {
         if (model.avatar) {
             els.currentAvatarImg.src = getFileUrl(model, model.avatar);
         } else {
-            const nameEnc = encodeURIComponent(model.email);
-            els.currentAvatarImg.src = `https://ui-avatars.com/api/?name=${nameEnc}&background=0D6EFD&color=ffffff&size=64`;
+            const initial = model.email.charAt(0).toUpperCase();
+            els.currentAvatarImg.src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='64' height='64' rx='32' fill='%230D6EFD'/><text x='32' y='32' dominant-baseline='central' text-anchor='middle' font-size='28' font-family='sans-serif' fill='white'>${initial}</text></svg>`;
         }
         state.itemsPerPage = parseInt(els.itemsPerPageSelect.value, 10);
         loadInvoicesCallback();
@@ -258,7 +258,7 @@ export function renderAttachmentPreview() {
     container.innerHTML = "";
 
     if (state.currentAttachments.length === 0) {
-        container.innerHTML = "<small class='text-muted'>No existing attachments</small>";
+        container.innerHTML = "<small class='text-muted'>暂无附件</small>";
         return;
     }
 
@@ -267,11 +267,25 @@ export function renderAttachmentPreview() {
         div.className = "d-flex align-items-center mb-1 bg-light p-1 rounded";
         
         const fileUrl = getFileUrl(state.currentRecord, f);
-        div.innerHTML = `
-            <i class="bi bi-paperclip me-2 text-secondary"></i>
-            <a href="${fileUrl}" target="_blank" class="text-decoration-none text-truncate me-auto" style="max-width: 300px;">${f}</a>
-            <button type="button" class="btn btn-sm text-danger ms-2 remove-attachment-btn" data-filename="${f}"><i class="bi bi-x-lg"></i></button>
-        `;
+        const icon = document.createElement('i');
+        icon.className = 'bi bi-paperclip me-2 text-secondary';
+
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.target = '_blank';
+        link.className = 'text-decoration-none text-truncate me-auto';
+        link.style.maxWidth = '300px';
+        link.textContent = f;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn btn-sm text-danger ms-2 remove-attachment-btn';
+        removeBtn.dataset.filename = f;
+        removeBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+
+        div.appendChild(icon);
+        div.appendChild(link);
+        div.appendChild(removeBtn);
         
         container.appendChild(div);
     });
@@ -296,12 +310,20 @@ export function showToast(message, type = 'info') {
     toastEl.setAttribute('aria-live', 'assertive');
     toastEl.setAttribute('aria-atomic', 'true');
     
-    toastEl.innerHTML = `
-        <div class="d-flex">
-          <div class="toast-body">${message}</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    `;
+    const toastBody = document.createElement('div');
+    toastBody.className = 'toast-body';
+    toastBody.textContent = message;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'btn-close btn-close-white me-2 m-auto';
+    closeBtn.setAttribute('data-bs-dismiss', 'toast');
+
+    const row = document.createElement('div');
+    row.className = 'd-flex';
+    row.appendChild(toastBody);
+    row.appendChild(closeBtn);
+    toastEl.appendChild(row);
 
     container.appendChild(toastEl);
     const toast = new bootstrap.Toast(toastEl, { delay: 3000 });

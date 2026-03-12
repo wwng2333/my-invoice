@@ -25,9 +25,9 @@ export async function login(email, password) {
         try {
             const { showToast } = await import('./ui.js');
             if (err.message.includes('autocancelled')) {
-                showToast("Previous login attempt cancelled. Please try again.", 'warning');
+                showToast("上一次登录请求已取消，请重试。", 'warning');
             } else {
-                showToast("Login failed: " + err.message, 'danger');
+                showToast("登录失败：" + err.message, 'danger');
             }
         } catch (e) {
             console.warn('showToast not available:', e);
@@ -52,17 +52,15 @@ export function getFileUrl(record, filename) {
     return pb.files.getURL(record, filename);
 }
 
-export async function getInvoices() {
+export async function getInvoices(searchTerm = '', statusValue = '') {
     const filters = [];
-    const searchInput = document.getElementById('searchInput');
-    const statusFilter = document.getElementById('statusFilter');
 
-    if (searchInput?.value) {
-        const term = searchInput.value.trim();
+    if (searchTerm) {
+        const term = searchTerm.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
         filters.push(`(invoice_number ~ "${term}" || vendor ~ "${term}" || description ~ "${term}")`);
     }
-    if (statusFilter?.value) {
-        filters.push(`status = "${statusFilter.value}"`);
+    if (statusValue) {
+        filters.push(`status = "${statusValue}"`);
     }
 
     try {
@@ -76,7 +74,7 @@ export async function getInvoices() {
         if (handleAuthError(e)) return null;
         if (e.status !== 0) {
             console.error("Failed to load invoices:", e);
-            try { const { showToast } = await import('./ui.js'); showToast("Failed to load: " + e.message, 'danger'); } catch(_) { }
+            try { const { showToast } = await import('./ui.js'); showToast("加载失败：" + e.message, 'danger'); } catch(_) { }
         }
         return null;
     }
@@ -96,21 +94,21 @@ export async function saveInvoice(id, formData) {
     try {
         const model = getAuthModel();
         if (!model) {
-            try { const { showToast } = await import('./ui.js'); showToast("Not authenticated. Please login.", 'warning'); } catch(_) { }
+            try { const { showToast } = await import('./ui.js'); showToast("未登录，请先登录。", 'warning'); } catch(_) { }
             return false;
         }
         formData.append("user", model.id);
         if (id) {
             await pb.collection("invoices").update(id, formData);
-            try { const { showToast } = await import('./ui.js'); showToast("Update successful", 'success'); } catch(_) { }
+            try { const { showToast } = await import('./ui.js'); showToast("更新成功", 'success'); } catch(_) { }
         } else {
             await pb.collection("invoices").create(formData);
-            try { const { showToast } = await import('./ui.js'); showToast("Creation successful", 'success'); } catch(_) { }
+            try { const { showToast } = await import('./ui.js'); showToast("创建成功", 'success'); } catch(_) { }
         }
         return true;
     } catch (e) {
         if (handleAuthError(e)) return false;
-        try { const { showToast } = await import('./ui.js'); showToast("Save failed: " + e.message, 'danger'); } catch(_) { }
+        try { const { showToast } = await import('./ui.js'); showToast("保存失败：" + e.message, 'danger'); } catch(_) { }
         return false;
     }
 }
@@ -121,7 +119,7 @@ export async function deleteInvoice(id) {
         return true;
     } catch (e) {
         if (handleAuthError(e)) return false;
-        try { const { showToast } = await import('./ui.js'); showToast("Deletion failed: " + e.message, 'danger'); } catch(_) { }
+        try { const { showToast } = await import('./ui.js'); showToast("删除失败：" + e.message, 'danger'); } catch(_) { }
         return false;
     }
 }
@@ -131,11 +129,11 @@ export async function batchUpdateInvoices(ids, newStatus) {
         await Promise.all([...ids].map(id =>
             pb.collection("invoices").update(id, { status: newStatus })
         ));
-        try { const { showToast } = await import('./ui.js'); showToast("Batch update successful", 'success'); } catch(_) { }
+        try { const { showToast } = await import('./ui.js'); showToast("批量更新成功", 'success'); } catch(_) { }
         return true;
     } catch (e) {
         if (handleAuthError(e)) return false;
-        try { const { showToast } = await import('./ui.js'); showToast("Operation failed: " + e.message, 'danger'); } catch(_) { }
+        try { const { showToast } = await import('./ui.js'); showToast("操作失败：" + e.message, 'danger'); } catch(_) { }
         return false;
     }
 }
