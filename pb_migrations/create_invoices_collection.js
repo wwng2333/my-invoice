@@ -127,6 +127,20 @@ migrate((app) => {
         "type": "file"
       },
       {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_attribution",
+        "max": 0,
+        "min": 0,
+        "name": "attribution",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
         "cascadeDelete": false,
         "collectionId": "_pb_users_auth_",
         "hidden": false,
