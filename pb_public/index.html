@@ -71,6 +71,7 @@
                     <option value="in_reimbursement">报销中</option>
                     <option value="reimbursed">已报销</option>
                 </select>
+                <input id="attributionFilter" class="form-control flex-shrink-0" style="width: 140px;" placeholder="按归属过滤...">
                 <div class="d-flex align-items-center flex-shrink-0">
                     <select id="itemsPerPageSelect" class="form-select d-inline-block w-auto">
                         <option value="10">10</option>
@@ -97,6 +98,7 @@
                 <th scope="col" data-sort-by="vendor" class="cursor-pointer">供应商 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
                 <th scope="col" data-sort-by="amount" class="cursor-pointer" style="width: 130px;">金额 <i class="bi bi-sort-numeric-down sort-indicator"></i></th>
                 <th scope="col" data-sort-by="status" class="cursor-pointer" style="width: 120px;">状态 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
+                <th scope="col" data-sort-by="attribution" class="cursor-pointer" style="width: 110px;">归属 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
                 <th scope="col">描述</th>
                 <th scope="col" style="width: 100px;">附件</th>
                 <th scope="col" style="width: 120px;" class="text-end">操作</th>
@@ -106,7 +108,7 @@
             </tbody>
             <tfoot id="noInvoicesMessage" style="display: none;">
                 <tr>
-                <td colspan="9" class="text-center py-5 text-muted">
+                <td colspan="10" class="text-center py-5 text-muted">
                     <i class="bi bi-cloud-slash fs-1"></i>
                     <p class="mt-2">暂无发票数据</p>
                 </td>
@@ -162,6 +164,10 @@
               <!-- Right Column -->
               <div class="col-md-5">
                 <div class="form-sidebar p-3 rounded">
+                    <div class="mb-3">
+                        <label for="attribution" class="form-label">归属</label>
+                        <input id="attribution" name="attribution" class="form-control" placeholder="归属" value="Default">
+                    </div>
                     <div class="mb-3">
                         <label for="status" class="form-label">状态</label>
                         <select id="status" name="status" class="form-select">

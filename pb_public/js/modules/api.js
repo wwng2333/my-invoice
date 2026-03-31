@@ -52,7 +52,7 @@ export function getFileUrl(record, filename) {
     return pb.files.getURL(record, filename);
 }
 
-export async function getInvoices(searchTerm = '', statusValue = '') {
+export async function getInvoices(searchTerm = '', statusValue = '', attributionValue = '') {
     const filters = [];
 
     if (searchTerm) {
@@ -62,12 +62,16 @@ export async function getInvoices(searchTerm = '', statusValue = '') {
     if (statusValue) {
         filters.push(`status = "${statusValue}"`);
     }
+    if (attributionValue) {
+        const attr = attributionValue.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        filters.push(`attribution = "${attr}"`);
+    }
 
     try {
         const result = await pb.collection("invoices").getList(state.currentPage, state.itemsPerPage, {
             sort: `${state.sortOrder === "desc" ? "-" : ""}${state.sortBy}`,
             filter: filters.join(" && "),
-            fields: "id,invoice_number,invoice_date,vendor,amount,status,description,attachments"
+            fields: "id,invoice_number,invoice_date,vendor,amount,status,description,attachments,attribution"
         });
         return result;
     } catch (e) {

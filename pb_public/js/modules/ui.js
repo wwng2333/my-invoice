@@ -33,6 +33,7 @@ export function initializeElements() {
         recognizeInvoiceNumberBtn: getEl("recognizeInvoiceNumberBtn"),
         searchInput: getEl("searchInput"),
         statusFilter: getEl("statusFilter"),
+        attributionFilter: getEl("attributionFilter"),
         itemsPerPageSelect: getEl("itemsPerPageSelect"),
         invoiceList: getEl("invoiceList"),
         pagination: getEl("pagination"),
@@ -57,6 +58,7 @@ export function initializeElements() {
         vendor: getEl("vendor"),
         amount: getEl("amount"),
         status: getEl("status"),
+        attribution: getEl("attribution"),
         description: getEl("description"),
         attachments: getEl("attachments"),
         fileChosenText: getEl("file-chosen-text"),
@@ -117,6 +119,7 @@ export function createInvoiceRow(rec, { onSelect, onEdit, onDelete }) {
         <td>${escapeHtml(rec.vendor)}</td>
         <td class="text-end">¥${Number(rec.amount).toFixed(2)}</td>
         <td><span class="badge bg-${STATUS_COLORS[rec.status] || 'secondary'}">${STATUS_MAP[rec.status] || rec.status}</span></td>
+        <td class="text-truncate" style="max-width: 110px;" title="${escapeHtml(rec.attribution || '')}">${escapeHtml(rec.attribution || 'Default')}</td>
         <td class="text-truncate" style="max-width: 150px;" title="${escapeHtml(rec.description || '')}">${escapeHtml(rec.description || "-")}</td>
         <td class="text-center">${(rec.attachments || []).length === 0 ? "无" : (rec.attachments || []).map((_, i) => `<i class="bi bi-file-earmark-pdf-fill text-danger me-1" title="附件${i + 1}"></i>`).join("")}</td>
         <td class="text-end">

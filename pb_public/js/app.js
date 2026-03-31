@@ -76,6 +76,7 @@ function setupEventListeners() {
 
     ui.els.searchInput.oninput = debounce(() => { state.currentPage = 1; loadInvoices(); }, CONFIG.TIMEOUT.SEARCH_DEBOUNCE);
     ui.els.statusFilter.onchange = () => { state.currentPage = 1; loadInvoices(); };
+    ui.els.attributionFilter.oninput = debounce(() => { state.currentPage = 1; loadInvoices(); }, CONFIG.TIMEOUT.SEARCH_DEBOUNCE);
 
     document.querySelectorAll("th[data-sort-by]").forEach(th => th.addEventListener("click", handleSortClick));
     ui.els.itemsPerPageSelect.onchange = handlePageSizeChange;
@@ -172,7 +173,8 @@ async function loadInvoices() {
 
     const result = await api.getInvoices(
         ui.els.searchInput.value.trim(),
-        ui.els.statusFilter.value
+        ui.els.statusFilter.value,
+        ui.els.attributionFilter.value
     );
 
     if (requestId !== loadRequestId) { ui.hideLoader(); return; }
@@ -241,6 +243,7 @@ async function openModal(rec = null) {
         ui.els.vendor.value = r.vendor;
         ui.els.amount.value = r.amount;
         ui.els.status.value = r.status;
+        ui.els.attribution.value = r.attribution || "Default";
         ui.els.description.value = r.description || "";
         ui.renderAttachmentPreview();
     } else {
