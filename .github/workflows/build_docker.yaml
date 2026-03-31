@@ -8,7 +8,7 @@ on:
       version:
         description: 'Pocketbase version'
         required: false
-        default: '0.30.2'
+        default: '0.36.8'
 
 jobs:
   release:
