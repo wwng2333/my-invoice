@@ -478,6 +478,8 @@ function handleGlobalKeys(e) {
     if (ui.els.invoiceModal.classList.contains('show')) return;
 
     if (e.ctrlKey && e.key === "a") {
+        const tag = document.activeElement?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
         e.preventDefault();
         const allCheckboxes = document.querySelectorAll(".row-select-checkbox");
         if(allCheckboxes.length === 0) return;
