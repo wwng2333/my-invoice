@@ -243,7 +243,8 @@ async function openModal(rec = null) {
         ui.els.vendor.value = r.vendor;
         ui.els.amount.value = r.amount;
         ui.els.status.value = r.status;
-        ui.els.attribution.value = r.attribution || "Default";
+        // 仅在 null/undefined 时使用 "Default"；保留空字符串以便用户能显式清空归属。
+        ui.els.attribution.value = r.attribution ?? "Default";
         ui.els.description.value = r.description || "";
         ui.renderAttachmentPreview();
     } else {
@@ -266,7 +267,9 @@ async function handleRecognizePDF() {
         if (file.type !== "application/pdf") throw new Error("请选择 PDF 文件");
 
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, cMapUrl: './cmaps/', cMapPacked: true }).promise;
+        // 不再传入 cMapUrl/cMapPacked，复用 index.html 中设置的全局 CDN 配置，
+        // 避免覆盖导致 ./cmaps/ 404（目录不存在）造成中文 PDF 乱码。
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
         let fullText = "";
         for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
@@ -276,13 +279,15 @@ async function handleRecognizePDF() {
         }
 
         const cleanText = fullText.replace(/\s+/g, "");
-        
-        const amountNumRegex = /(?:小写|金额|计)\D{0,5}?([¥￥]?\s*\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/;
+
+        // 金额：避免使用单独的 "计" 字符，否则会误匹配 "合计/总计/会计/统计..."。
+        // 优先匹配 "小写/金额/价税合计/小计" 后面跟着的数字。
+        const amountNumRegex = /(?:小写|金额|价税合计|小计)\D{0,5}?([¥￥]?\s*\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/;
         const numMatch = cleanText.match(amountNumRegex);
         if (numMatch) {
             ui.els.amount.value = parseFloat(numMatch[1].replace(/[¥￥,\s]/g, '')).toFixed(2);
         } else {
-            const chineseAmountRegex = /([零壹贰叁肆伍陆柒捌玖拾佰仟万亿圆元角分整]{4,})/; 
+            const chineseAmountRegex = /([零壹贰叁肆伍陆柒捌玖拾佰仟万亿圆元角分整]{4,})/;
             const cnMatch = cleanText.match(chineseAmountRegex);
             if (cnMatch) ui.els.amount.value = convertChineseToNumber(cnMatch[1]).toFixed(2);
         }
@@ -292,8 +297,13 @@ async function handleRecognizePDF() {
         if (numMatchInv) {
             ui.els.invoiceNumber.value = numMatchInv[1];
         } else {
-            const looseMatch = cleanText.match(/\d{20}/) || cleanText.match(/\d{10,12}/);
-            if(looseMatch) ui.els.invoiceNumber.value = looseMatch[0];
+            // 中国增值税发票号标准长度为 8 位（普通发票）或 12 位（增值税电子发票）。
+            // 原来 \d{20} 和 \d{10,12} 范围过宽，会把日期、电话、金额串接等数字误判为发票号。
+            // 限制为 8 或 12 位，且需靠近"发票号码"等关键词。
+            const head = cleanText.slice(0, Math.min(cleanText.length, 400));
+            const looseMatch = head.match(/(?:发票号码|No\.|NO\.|号码)[:：]?\s*(\d{8}|\d{12})\b/)
+                || head.match(/\b(\d{8}|\d{12})\b/);
+            if (looseMatch) ui.els.invoiceNumber.value = looseMatch[1];
         }
 
         const dateRegex = /(\d{4})[.\-年](\d{1,2})[.\-月](\d{1,2})/; 

@@ -84,7 +84,9 @@ export function renderUI(loadInvoicesCallback) {
         if (model.avatar) {
             els.currentAvatarImg.src = getFileUrl(model, model.avatar);
         } else {
-            const initial = model.email.charAt(0).toUpperCase();
+            // 防御性：即使 PocketBase 已校验 email 格式，对 initial 也做一次转义，
+            // 防止首字母为 < / & / " 等特殊字符时破坏 SVG 标记或产生注入。
+            const initial = escapeHtml(model.email.charAt(0).toUpperCase());
             els.currentAvatarImg.src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='64' height='64' rx='32' fill='%230D6EFD'/><text x='32' y='32' dominant-baseline='central' text-anchor='middle' font-size='28' font-family='sans-serif' fill='white'>${initial}</text></svg>`;
         }
         state.itemsPerPage = parseInt(els.itemsPerPageSelect.value, 10);

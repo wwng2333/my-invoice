@@ -37,6 +37,29 @@ export function escapeHtml(text) {
 export const getEl = (id) => document.getElementById(id);
 
 /**
+ * Escapes a string for safe use inside a PocketBase filter expression.
+ *
+ * PocketBase filter syntax only treats backslash and double-quote as string
+ * escapes; inside a quoted string, parentheses and logical operators are
+ * treated as ordinary characters. However, raw control characters (\n, \r, …)
+ * can confuse the parser, so we strip them and escape the two syntactic
+ * characters PocketBase actually recognises.
+ *
+ * @param {string} text The raw user input.
+ * @returns {string} A value safe to embed between double-quotes in a filter.
+ */
+export function escapeFilter(text) {
+    if (text == null) return "";
+    return String(text)
+        // 去除所有 ASCII 控制字符（含 \n / \r / \t）以防过滤器解析器被干扰
+        .replace(/[\x00-\x1F\x7F]/g, "")
+        // 反斜杠必须先转义（顺序重要）
+        .replace(/\\/g, "\\\\")
+        // 双引号需要转义以避免提前结束字符串
+        .replace(/"/g, '\\"');
+}
+
+/**
  * Converts a Chinese numeric string to a number.
  * @param {string} chineseStr The Chinese numeric string.
  * @returns {number} The converted number.

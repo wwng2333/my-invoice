@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
 import { state } from './state.js';
+import { escapeFilter } from './utils.js';
 
 const pb = new PocketBase(CONFIG.PB_URL);
 
@@ -56,14 +57,15 @@ export async function getInvoices(searchTerm = '', statusValue = '', attribution
     const filters = [];
 
     if (searchTerm) {
-        const term = searchTerm.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        // 使用统一的过滤器转义函数，避免 `\` / `"` / `(` / `)` / 控制字符破坏过滤表达式
+        const term = escapeFilter(searchTerm);
         filters.push(`(invoice_number ~ "${term}" || vendor ~ "${term}" || description ~ "${term}")`);
     }
     if (statusValue) {
-        filters.push(`status = "${statusValue}"`);
+        filters.push(`status = "${escapeFilter(statusValue)}"`);
     }
     if (attributionValue) {
-        const attr = attributionValue.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        const attr = escapeFilter(attributionValue);
         filters.push(`attribution = "${attr}"`);
     }
 
