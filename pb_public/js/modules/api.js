@@ -75,6 +75,18 @@ export async function getInvoices(searchTerm = '', statusValue = '', attribution
             filter: filters.join(" && "),
             fields: "id,invoice_number,invoice_date,vendor,amount,status,description,attachments,attribution"
         });
+
+        // PocketBase 对 list 查询通常不会在 token 过期时返回 401 ——
+        // 当集合配置为"已登录可读"时，过期 token 会被当作未认证，
+        // 服务端直接返回 200 + 空列表，导致 handleAuthError 永远不触发。
+        // 这里在拿到结果后主动校验 authStore 有效性（基于 JWT 的 exp），
+        // 一旦本地 token 过期即按"认证过期"处理，避免用户停在空白列表页。
+        if (!pb.authStore.isValid) {
+            pb.authStore.clear();
+            document.dispatchEvent(new CustomEvent('auth:expired'));
+            return null;
+        }
+
         return result;
     } catch (e) {
         if (handleAuthError(e)) return null;
