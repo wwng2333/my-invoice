@@ -14,7 +14,7 @@ export const STATUS_MAP = {
 export const STATUS_COLORS = {
     pending_application: "secondary",
     in_invoicing: "warning",
-    in_reimbursement: "primary",
+    in_reimbursement: "info",
     reimbursed: "success"
 };
 
@@ -64,7 +64,18 @@ export function initializeElements() {
         fileChosenText: getEl("file-chosen-text"),
         attachmentPreview: getEl("attachmentPreview"),
         confirmDeleteModal: getEl("confirmDeleteModal"),
-        confirmDeleteBtn: getEl("confirmDeleteBtn")
+        confirmDeleteBtn: getEl("confirmDeleteBtn"),
+        // Stats cards
+        statsRow: getEl("statsRow"),
+        statCount: getEl("statCount"),
+        statAmount: getEl("statAmount"),
+        statPending: getEl("statPending"),
+        statReimbursed: getEl("statReimbursed"),
+        // New (unsaved) files preview
+        newFilesList: getEl("newFilesList"),
+        // Delete modal dynamic text
+        confirmDeleteTitle: getEl("confirmDeleteTitle"),
+        confirmDeleteBody: getEl("confirmDeleteBody")
     };
     return Object.values(els).every(el => el !== null);
 }
@@ -86,8 +97,9 @@ export function renderUI(loadInvoicesCallback) {
         } else {
             // 防御性：即使 PocketBase 已校验 email 格式，对 initial 也做一次转义，
             // 防止首字母为 < / & / " 等特殊字符时破坏 SVG 标记或产生注入。
+            // fill 使用青绿主题色 (%23 = '#')。
             const initial = escapeHtml(model.email.charAt(0).toUpperCase());
-            els.currentAvatarImg.src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='64' height='64' rx='32' fill='%230D6EFD'/><text x='32' y='32' dominant-baseline='central' text-anchor='middle' font-size='28' font-family='sans-serif' fill='white'>${initial}</text></svg>`;
+            els.currentAvatarImg.src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='64' height='64' rx='32' fill='%230d9488'/><text x='32' y='32' dominant-baseline='central' text-anchor='middle' font-size='28' font-family='sans-serif' fill='white'>${initial}</text></svg>`;
         }
         state.itemsPerPage = parseInt(els.itemsPerPageSelect.value, 10);
         loadInvoicesCallback();
@@ -293,6 +305,104 @@ export function renderAttachmentPreview() {
         div.appendChild(removeBtn);
         
         container.appendChild(div);
+    });
+}
+
+
+/**
+ * Renders the stats cards based on the currently visible invoice items.
+ * Stats are computed from the current view (not a global aggregate) to avoid
+ * an extra API request; the label makes this scope explicit.
+ * @param {Array} items The invoice records currently rendered in the table.
+ */
+export function renderStats(items) {
+    if (!els.statsRow) return;
+    const list = items || [];
+    const total = list.length;
+    const totalAmount = list.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    const pending = list.filter(r => r.status !== 'reimbursed').length;
+    const reimbursed = list.filter(r => r.status === 'reimbursed').length;
+
+    els.statCount.textContent = String(total);
+    els.statAmount.textContent = totalAmount.toFixed(2);
+    els.statPending.textContent = String(pending);
+    els.statReimbursed.textContent = String(reimbursed);
+}
+
+/**
+ * Renders placeholder skeleton rows while invoice data is loading, replacing
+ * the previous "clear table → spinner → fill" flicker.
+ * @param {number} rows Number of skeleton rows to render.
+ */
+export function renderSkeletonRows(rows = 6) {
+    if (!els.invoiceList) return;
+    els.invoiceList.innerHTML = "";
+    const fragment = document.createDocumentFragment();
+    for (let r = 0; r < rows; r++) {
+        const tr = document.createElement("tr");
+        tr.className = "skeleton-row";
+        for (let c = 0; c < 10; c++) {
+            const td = document.createElement("td");
+            const bar = document.createElement("div");
+            bar.className = "skeleton-cell";
+            // Vary widths slightly so it doesn't look like a uniform grid.
+            const widths = ["70%", "55%", "80%", "60%", "50%", "45%", "55%", "75%", "30%", "40%"];
+            bar.style.width = widths[c] || "50%";
+            td.appendChild(bar);
+            tr.appendChild(td);
+        }
+        fragment.appendChild(tr);
+    }
+    els.invoiceList.appendChild(fragment);
+}
+
+/**
+ * Renders chips for newly-selected (not-yet-saved) attachment files, so the
+ * user can see which files they picked before saving — and remove them.
+ * Existing saved attachments are rendered separately by renderAttachmentPreview.
+ * @param {FileList|Array} files The files currently chosen in the file input.
+ */
+export function renderNewFilesPreview(files) {
+    if (!els.newFilesList) return;
+    els.newFilesList.innerHTML = "";
+    const arr = files ? Array.from(files) : [];
+    if (arr.length === 0) {
+        els.newFilesList.style.display = "none";
+        return;
+    }
+    els.newFilesList.style.display = "";
+
+    arr.forEach((file) => {
+        const chip = document.createElement("div");
+        chip.className = "new-file-chip";
+
+        const icon = document.createElement("i");
+        icon.className = "bi bi-file-earmark-pdf text-danger";
+
+        const name = document.createElement("span");
+        name.className = "chip-name";
+        name.textContent = file.name;
+        name.title = file.name;
+
+        const size = document.createElement("span");
+        size.className = "text-muted";
+        size.style.fontSize = "0.72rem";
+        size.textContent = (file.size / 1024).toFixed(0) + " KB";
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "chip-remove";
+        remove.title = "移除";
+        remove.setAttribute("aria-label", "移除 " + file.name);
+        remove.innerHTML = '<i class="bi bi-x-lg"></i>';
+        // Mark for the delegated removal handler in app.js
+        remove.dataset.fileName = file.name;
+
+        chip.appendChild(icon);
+        chip.appendChild(name);
+        chip.appendChild(size);
+        chip.appendChild(remove);
+        els.newFilesList.appendChild(chip);
     });
 }
 

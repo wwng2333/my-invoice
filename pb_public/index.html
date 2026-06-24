@@ -15,16 +15,16 @@
   <div id="loading-overlay">
     <div class="spinner"></div>
   </div>
-  <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+  <nav class="navbar navbar-expand navbar-light fixed-top">
     <div class="container">
       <a class="navbar-brand" href="#"><i class="bi bi-receipt-cutoff me-2"></i><strong>发票管理</strong>系统</a>
       <div class="d-flex ms-auto align-items-center">
-        <button id="theme-toggler" class="btn btn-outline-secondary btn-sm me-3">
+        <button id="theme-toggler" class="btn btn-outline-secondary btn-sm me-2" aria-label="切换主题">
           <i class="bi bi-sun-fill"></i>
         </button>
-        <img id="currentAvatar" class="rounded-circle me-2" style="width:32px;height:32px;display:none" alt="avatar">
-        <span id="currentUser" class="navbar-text me-3" style="display:none"></span>
-        <button id="logoutBtn" class="btn btn-outline-secondary btn-sm" style="display:none"><i class="bi bi-box-arrow-right me-1"></i> <span>退出</span></button>
+        <img id="currentAvatar" class="rounded-circle me-2" style="width:30px;height:30px;display:none" alt="avatar">
+        <span id="currentUser" class="navbar-text me-2" style="display:none"></span>
+        <button id="logoutBtn" class="btn btn-outline-secondary btn-sm" style="display:none"><i class="bi bi-box-arrow-right"></i> <span>退出</span></button>
       </div>
     </div>
   </nav>
@@ -53,6 +53,28 @@
 
     <div id="mainSection" style="display:none">
       <div class="main-card">
+        <!-- Stats cards (based on current view) -->
+        <div class="stats-row" id="statsRow">
+          <div class="stat-card">
+            <span class="stat-label"><i class="bi bi-files"></i> 当前视图</span>
+            <span class="stat-value" id="statCount">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label"><i class="bi bi-currency-yen"></i> 总金额</span>
+            <span class="stat-value text-primary" id="statAmount">0.00</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label"><i class="bi bi-hourglass-split"></i> 待处理</span>
+            <span class="stat-value" id="statPending">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label"><i class="bi bi-check2-circle"></i> 已报销</span>
+            <span class="stat-value" id="statReimbursed">0</span>
+          </div>
+        </div>
+
+        <!-- paginationControlsWrapper stays in DOM (initializeElements requires it)
+             but is never shown or populated. -->
         <div class="controls-header">
             <div id="paginationControlsWrapper" class="d-flex align-items-center gap-3">
             </div>
@@ -63,16 +85,16 @@
                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
                 <input id="searchInput" class="form-control border-start-0" placeholder="按发票号、供应商或描述搜索... (Ctrl+F)">
             </div>
-            <div class="d-flex align-items-center gap-3 flex-shrink-0">
-                <select id="statusFilter" class="form-select flex-shrink-0 status-filter">
+            <div class="filter-group">
+                <select id="statusFilter" class="form-select status-filter">
                     <option value="">所有状态</option>
                     <option value="pending_application">待申请</option>
                     <option value="in_invoicing">开票中</option>
                     <option value="in_reimbursement">报销中</option>
                     <option value="reimbursed">已报销</option>
                 </select>
-                <input id="attributionFilter" class="form-control flex-shrink-0" style="width: 140px;" placeholder="按归属过滤...">
-                <div class="d-flex align-items-center flex-shrink-0">
+                <input id="attributionFilter" class="form-control" style="width: 140px;" placeholder="按归属过滤...">
+                <div class="d-flex align-items-center">
                     <select id="itemsPerPageSelect" class="form-select d-inline-block w-auto">
                         <option value="10">10</option>
                         <option value="25" selected>25</option>
@@ -81,10 +103,7 @@
                     </select>
                     <label for="itemsPerPageSelect" class="form-label mb-0 ms-2 text-muted">/ 页</label>
                 </div>
-                <button class="btn btn-primary d-flex align-items-center flex-shrink-0" id="addInvoiceBtn"><i class="bi bi-plus-circle-fill me-2"></i> <span>添加发票</span></button>
-                <nav aria-label="Page navigation" class="flex-shrink-0">
-                    <ul id="pagination" class="pagination mb-0"></ul>
-                </nav>
+                <button class="btn btn-primary d-flex align-items-center" id="addInvoiceBtn"><i class="bi bi-plus-circle-fill me-2"></i> <span>添加发票</span></button>
             </div>
         </div>
 
@@ -97,27 +116,35 @@
                 <th scope="col" data-sort-by="invoice_date" class="cursor-pointer" style="width: 120px;">日期 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
                 <th scope="col" data-sort-by="vendor" class="cursor-pointer">供应商 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
                 <th scope="col" data-sort-by="amount" class="cursor-pointer" style="width: 130px;">金额 <i class="bi bi-sort-numeric-down sort-indicator"></i></th>
-                <th scope="col" data-sort-by="status" class="cursor-pointer" style="width: 120px;">状态 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
+                <th scope="col" data-sort-by="status" class="cursor-pointer" style="width: 110px;">状态 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
                 <th scope="col" data-sort-by="attribution" class="cursor-pointer" style="width: 110px;">归属 <i class="bi bi-sort-alpha-down sort-indicator"></i></th>
                 <th scope="col">描述</th>
-                <th scope="col" style="width: 100px;">附件</th>
-                <th scope="col" style="width: 120px;" class="text-end">操作</th>
+                <th scope="col" style="width: 90px;">附件</th>
+                <th scope="col" style="width: 110px;" class="text-end">操作</th>
                 </tr>
             </thead>
             <tbody id="invoiceList">
             </tbody>
-            <tfoot id="noInvoicesMessage" style="display: none;">
-                <tr>
-                <td colspan="10" class="text-center py-5 text-muted">
-                    <i class="bi bi-cloud-slash fs-1"></i>
-                    <p class="mt-2">暂无发票数据</p>
-                </td>
-                </tr>
-            </tfoot>
             </table>
         </div>
 
-        <div id="loading" class="text-center py-5" style="display:none">
+        <!-- Empty state (independent block, not a table cell). Hidden by default;
+             JS toggles display. -->
+        <div id="noInvoicesMessage" class="empty-state" style="display: none;">
+            <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+            <div class="empty-text">暂无发票数据</div>
+            <button class="btn btn-outline-primary btn-sm" id="emptyAddBtn" type="button">
+                <i class="bi bi-plus-circle me-1"></i> 添加第一张发票
+            </button>
+        </div>
+
+        <div class="pagination-bar">
+            <nav aria-label="Page navigation">
+                <ul id="pagination" class="pagination mb-0"></ul>
+            </nav>
+        </div>
+
+        <div id="loading" class="text-center py-4" style="display:none">
             <div class="spinner-border text-primary" role="status"></div>
             <p class="text-muted mt-2">加载数据中...</p>
         </div>
@@ -186,6 +213,8 @@
                             </label>
                             <span id="file-chosen-text" class="d-block text-center text-muted mt-2">未选择文件</span>
                         </div>
+                        <!-- Newly chosen (unsaved) files; rendered by renderNewFilesPreview -->
+                        <div id="newFilesList" class="new-files-list mt-2" style="display:none;"></div>
                         <div id="attachmentPreview" class="attachment-preview mt-3"></div>
                     </div>
                 </div>
@@ -205,14 +234,14 @@
     </div>
   </div>
 
-  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="confirmDeleteModalLabel">确认删除</h5>
+          <h5 class="modal-title" id="confirmDeleteTitle">确认删除</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" id="confirmDeleteBody">
           您确定要删除此发票吗？此操作不可撤销。
         </div>
         <div class="modal-footer">

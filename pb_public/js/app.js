@@ -107,7 +107,28 @@ function setupEventListeners() {
         } else {
             ui.els.fileChosenText.textContent = '未选择文件';
         }
+        ui.renderNewFilesPreview(ui.els.attachments.files);
     });
+
+    // Delegated click for newly-chosen (unsaved) file chips removal
+    if (ui.els.newFilesList) {
+        ui.els.newFilesList.addEventListener('click', (e) => {
+            const chipRemove = e.target.closest('.chip-remove');
+            if (!chipRemove) return;
+            e.preventDefault();
+            // We cannot remove from the FileList directly; the simplest UX is to
+            // clear the entire file input, which resets the preview.
+            ui.els.attachments.value = '';
+            ui.els.fileChosenText.textContent = '未选择文件';
+            ui.renderNewFilesPreview(null);
+        });
+    }
+
+    // Empty-state "add first invoice" button (non-critical; may not be ready on init)
+    const emptyAddBtn = document.getElementById('emptyAddBtn');
+    if (emptyAddBtn) {
+        emptyAddBtn.onclick = () => openModal();
+    }
 }
 
 async function handleLogin(e) {
@@ -163,13 +184,16 @@ function handlePageSizeChange() {
 
 async function loadInvoices() {
     const requestId = ++loadRequestId;
-    ui.showLoader();
-    ui.els.invoiceList.innerHTML = "";
 
     state.selected.clear();
     state.totalAmount = 0;
     ui.updateBatchUI();
     ui.els.selectAllCheckbox.checked = false;
+    ui.els.selectAllCheckbox.indeterminate = false;
+    ui.els.noInvoicesMessage.style.display = "none";
+
+    // Show skeleton rows instead of clearing the table (avoids flash)
+    ui.renderSkeletonRows(6);
 
     const result = await api.getInvoices(
         ui.els.searchInput.value.trim(),
@@ -177,9 +201,11 @@ async function loadInvoices() {
         ui.els.attributionFilter.value
     );
 
-    if (requestId !== loadRequestId) { ui.hideLoader(); return; }
+    if (requestId !== loadRequestId) return;
 
     if (result) {
+        // Clear the skeleton rows before appending real data
+        ui.els.invoiceList.innerHTML = "";
         const fragment = document.createDocumentFragment();
         result.items.forEach(r => fragment.appendChild(ui.createInvoiceRow(r, {
             onSelect: toggleSelect,
@@ -196,8 +222,9 @@ async function loadInvoices() {
             state.currentPage = page;
             loadInvoices();
         });
+
+        ui.renderStats(result.items);
     }
-    ui.hideLoader();
 }
 
 function toggleSelect(id, row, checkbox) {
@@ -219,11 +246,16 @@ function toggleSelect(id, row, checkbox) {
 
 function checkSelectAllStatus() {
     const allCheckboxes = document.querySelectorAll(".row-select-checkbox");
-    if(allCheckboxes.length === 0) {
+    // Exclude the header checkbox itself
+    const rowCheckboxes = Array.from(allCheckboxes).filter(cb => cb !== ui.els.selectAllCheckbox);
+    if (rowCheckboxes.length === 0) {
         ui.els.selectAllCheckbox.checked = false;
+        ui.els.selectAllCheckbox.indeterminate = false;
         return;
     }
-    ui.els.selectAllCheckbox.checked = Array.from(allCheckboxes).every(cb => cb.checked);
+    const checkedCount = rowCheckboxes.filter(cb => cb.checked).length;
+    ui.els.selectAllCheckbox.checked = checkedCount === rowCheckboxes.length;
+    ui.els.selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < rowCheckboxes.length;
 }
 
 async function openModal(rec = null) {
@@ -233,6 +265,7 @@ async function openModal(rec = null) {
     ui.els.invoiceId.value = rec ? rec.id : "";
     state.currentAttachments = rec?.attachments ? [...rec.attachments] : [];
     ui.els.attachmentPreview.innerHTML = "";
+    ui.renderNewFilesPreview(null);
     ui.els.modalTitle.textContent = rec ? "编辑发票" : "新增发票";
 
     if (rec) {
@@ -329,6 +362,15 @@ async function handleRecognizePDF() {
 
 async function handleSaveInvoice(e) {
     e.preventDefault();
+
+    // Trigger Bootstrap native validation styling
+    if (!ui.els.invoiceForm.checkValidity()) {
+        ui.els.invoiceForm.classList.add('was-validated');
+        return;
+    }
+    // Remove validation styling once valid (for subsequent edits)
+    ui.els.invoiceForm.classList.remove('was-validated');
+
     const id = ui.els.invoiceId.value;
     const fd = new FormData(ui.els.invoiceForm);
     
@@ -353,12 +395,16 @@ async function handleSaveInvoice(e) {
 function confirmSingleDelete(id) {
     ui.els.confirmDeleteBtn.dataset.deleteId = id;
     ui.els.confirmDeleteBtn.dataset.deleteType = 'single';
+    ui.els.confirmDeleteTitle.textContent = '确认删除';
+    ui.els.confirmDeleteBody.textContent = '您确定要删除此发票吗？此操作不可撤销。';
     bsConfirmDeleteModal.show();
 }
 
 function confirmBatchDelete() {
     if (!state.selected.size) return ui.showToast("请先选择发票", 'warning');
     ui.els.confirmDeleteBtn.dataset.deleteType = 'batch';
+    ui.els.confirmDeleteTitle.textContent = `确认删除 ${state.selected.size} 张发票`;
+    ui.els.confirmDeleteBody.textContent = `您确定要删除选中的 ${state.selected.size} 张发票吗？此操作不可撤销。`;
     bsConfirmDeleteModal.show();
 }
 
@@ -456,6 +502,7 @@ function deselectAll() {
     state.totalAmount = 0;
     ui.updateBatchUI();
     ui.els.selectAllCheckbox.checked = false;
+    ui.els.selectAllCheckbox.indeterminate = false;
 }
 
 function handleSelectAll() {
