@@ -108,6 +108,31 @@ export async function getInvoice(id) {
     }
 }
 
+/**
+ * 拉取全部发票（仅统计所需字段），按页循环取回，用于全局统计。
+ * @returns {Promise<Array|null>} 全部记录数组；出错时返回 null（已提示 toast）。
+ */
+export async function getAllInvoices() {
+    const all = [];
+    const perPage = 300;
+    try {
+        for (let page = 1; ; page++) {
+            const result = await pb.collection("invoices").getList(page, perPage, {
+                sort: "invoice_date",
+                fields: "amount,status,invoice_date,vendor,attribution"
+            });
+            all.push(...result.items);
+            if (page >= result.totalPages) break;
+        }
+        return all;
+    } catch (e) {
+        if (handleAuthError(e)) return null;
+        console.error("Failed to load all invoices:", e);
+        try { const { showToast } = await import('./ui.js'); showToast("统计数据加载失败：" + e.message, 'danger'); } catch(_) { }
+        return null;
+    }
+}
+
 export async function saveInvoice(id, formData) {
     try {
         const model = getAuthModel();

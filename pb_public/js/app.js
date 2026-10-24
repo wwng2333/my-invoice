@@ -1,12 +1,14 @@
 import { state } from './modules/state.js';
 import { debounce, convertChineseToNumber } from './modules/utils.js';
 import { loadFlatpickr, loadPdfJs, loadZipTools } from './modules/loaders.js';
+import * as stats from './modules/stats.js';
 import * as api from './modules/api.js';
 import * as ui from './modules/ui.js';
 import { CONFIG } from './config.js';
 
 let bsInvoiceModal = null;
 let bsConfirmDeleteModal = null;
+let bsStatsModal = null;
 let initRetryCount = 0;
 let initialized = false;
 let isLoggingIn = false;
@@ -32,6 +34,7 @@ function safeInitialize() {
     try {
         bsInvoiceModal = new bootstrap.Modal(ui.els.invoiceModal);
         bsConfirmDeleteModal = new bootstrap.Modal(ui.els.confirmDeleteModal);
+        bsStatsModal = new bootstrap.Modal(ui.els.statsModal);
         setupEventListeners();
         ui.renderUI(loadInvoices);
 
@@ -117,6 +120,7 @@ function setupEventListeners() {
     ui.els.selectAllCheckbox.onchange = handleSelectAll;
 
     ui.els.addInvoiceBtn.onclick = () => openModal();
+    ui.els.statsBtn.onclick = handleOpenStats;
     ui.els.recognizeInvoiceNumberBtn.onclick = handleRecognizePDF;
     
     document.addEventListener("keydown", handleGlobalKeys);
@@ -314,6 +318,29 @@ async function openModal(rec = null) {
         state.currentRecord = null;
     }
     bsInvoiceModal.show();
+}
+
+/**
+ * 打开全局统计弹窗：先展示加载态，待弹窗过渡完成后再拉取数据并渲染图表，
+ * 避免图表在弹窗动画期间以错误宽度初始化。
+ */
+async function handleOpenStats() {
+    ui.showStatsLoading();
+    bsStatsModal.show();
+    try {
+        await new Promise(resolve => {
+            if (ui.els.statsModal.classList.contains('show')) {
+                resolve();
+            } else {
+                ui.els.statsModal.addEventListener('shown.bs.modal', resolve, { once: true });
+            }
+        });
+        const records = await api.getAllInvoices();
+        await stats.renderGlobalStats(records);
+    } catch (e) {
+        console.error("Stats rendering failed:", e);
+        ui.showToast("统计渲染失败：" + e.message, 'danger');
+    }
 }
 
 async function handleRecognizePDF() {

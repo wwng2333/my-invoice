@@ -30,6 +30,7 @@ export function initializeElements() {
         currentUserSpan: getEl("currentUser"),
         currentAvatarImg: getEl("currentAvatar"),
         addInvoiceBtn: getEl("addInvoiceBtn"),
+        statsBtn: getEl("statsBtn"),
         recognizeInvoiceNumberBtn: getEl("recognizeInvoiceNumberBtn"),
         searchInput: getEl("searchInput"),
         searchClearBtn: getEl("searchClearBtn"),
@@ -77,7 +78,22 @@ export function initializeElements() {
         newFilesList: getEl("newFilesList"),
         // Delete modal dynamic text
         confirmDeleteTitle: getEl("confirmDeleteTitle"),
-        confirmDeleteBody: getEl("confirmDeleteBody")
+        confirmDeleteBody: getEl("confirmDeleteBody"),
+        // Stats modal
+        statsModal: getEl("statsModal"),
+        statsLoading: getEl("statsLoading"),
+        statsContent: getEl("statsContent"),
+        statsSummaryRow: getEl("statsSummaryRow"),
+        statsChartsGrid: getEl("statsChartsGrid"),
+        statsEmpty: getEl("statsEmpty"),
+        gsCount: getEl("gsCount"),
+        gsAmount: getEl("gsAmount"),
+        gsMonth: getEl("gsMonth"),
+        gsYear: getEl("gsYear"),
+        monthlyChart: getEl("monthlyChart"),
+        statusChart: getEl("statusChart"),
+        vendorChart: getEl("vendorChart"),
+        attributionChart: getEl("attributionChart")
     };
     return Object.values(els).every(el => el !== null);
 }
@@ -178,6 +194,14 @@ export function createInvoiceRow(rec, { onSelect, onEdit, onDelete }) {
     });
 
     return tr;
+}
+
+/**
+ * 将统计弹窗切到“加载中”状态（在数据取回并渲染前显示）。
+ */
+export function showStatsLoading() {
+    if (els.statsLoading) els.statsLoading.style.display = "";
+    if (els.statsContent) els.statsContent.style.display = "none";
 }
 
 /**

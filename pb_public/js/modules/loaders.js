@@ -82,3 +82,17 @@ export function loadZipTools() {
     }
     return zipPromise;
 }
+
+let chartjsPromise = null;
+/**
+ * 按需加载 Chart.js（统计弹窗首次打开时使用）。
+ * @returns {Promise<object>} window.Chart
+ */
+export function loadChartJs() {
+    if (!chartjsPromise) {
+        chartjsPromise = loadScript(CONFIG.VENDORS.CHARTJS.src, CONFIG.VENDORS.CHARTJS.integrity)
+            .then(() => window.Chart)
+            .catch(err => { chartjsPromise = null; throw err; });
+    }
+    return chartjsPromise;
+}

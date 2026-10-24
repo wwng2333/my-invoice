@@ -34,6 +34,10 @@ export const CONFIG = {
         FILESAVER: {
             src: "https://s4.zstatic.net/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js",
             integrity: "sha512-Qlv6VSKh1gDKGoJbnyA5RMXYcvnpIqhO++MhIM2fStMcGT9i2T//tSwYFlcyoRRDcDZ+TYHpH8azBBCyhpSeqw=="
+        },
+        CHARTJS: {
+            src: "https://s4.zstatic.net/ajax/libs/Chart.js/4.4.1/chart.umd.min.js",
+            integrity: "sha512-CQBWl4fJHWbryGE+Pc7UAxWMUMNMWzWxF4SQo9CgkJIN1kx6djDQZjh3Y8SZ1d+6I+1zze6Z7kHXO7q3UyZAWw=="
         }
     }
 };

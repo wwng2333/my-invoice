@@ -649,3 +649,51 @@ html.dark-mode .new-file-chip {
         scroll-behavior: auto !important;
     }
 }
+
+/* --- Stats modal --- */
+.stats-summary-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.stats-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+.stats-chart-card {
+    background: var(--card-bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 16px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.stats-chart-card h6 {
+    color: var(--muted-color);
+    font-weight: 600;
+    margin: 2px 0 10px;
+}
+.chart-box {
+    position: relative;
+    height: 280px;
+}
+.chart-box-square {
+    height: 250px;
+}
+@media (max-width: 1100px) {
+    .stats-summary-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 768px) {
+    .stats-charts-grid {
+        grid-template-columns: 1fr;
+    }
+    .chart-box {
+        height: 220px;
+    }
+    .chart-box-square {
+        height: 220px;
+    }
+}

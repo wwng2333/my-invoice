@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/bootstrap/5.3.8/css/bootstrap.min.css" integrity="sha512-2bBQCjcnw658Lho4nlXJcc6WkV/UxpE/sAokbXPxQNGqmNdQrWqtw26Ns9kFF/yG792pKR1Sx8/Y1Lf1XN4GKA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css" integrity="sha512-t7Few9xlddEmgd3oKZQahkNI4dS6l80+eGEzFQiqtyVYdvcSG2D3Iub77R20BdotfRPA9caaRkg1tyaJiPmO0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />  
   <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" integrity="sha512-MQXduO8IQnJVq1qmySpN87QQkiR1bZHtorbJBD0tzy7/0U9+YIC93QWHeGTEoojMVHWWNkoCp8V6OzVSYrX0oQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="css/style.css?v=1.1.0" />
+  <link rel="stylesheet" href="css/style.css?v=1.2.0" />
 
 </head>
 <body>
@@ -120,6 +120,7 @@
                     </select>
                     <label for="itemsPerPageSelect" class="form-label mb-0 ms-2 text-muted">/ 页</label>
                 </div>
+                <button class="btn btn-outline-primary d-flex align-items-center" id="statsBtn"><i class="bi bi-graph-up me-2"></i> <span>统计</span></button>
                 <button class="btn btn-primary d-flex align-items-center" id="addInvoiceBtn"><i class="bi bi-plus-circle-fill me-2"></i> <span>添加发票</span></button>
             </div>
         </div>
@@ -270,6 +271,73 @@
     </div>
   </div>
 
+  <div class="modal fade" id="statsModal" tabindex="-1" aria-labelledby="statsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="statsModalTitle"><i class="bi bi-graph-up me-2"></i>数据统计</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <!-- 加载中 -->
+          <div id="statsLoading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-2">正在计算统计数据...</p>
+          </div>
+
+          <!-- 统计内容 -->
+          <div id="statsContent" style="display:none">
+            <div class="stats-summary-row" id="statsSummaryRow">
+              <div class="stat-card">
+                <span class="stat-label"><i class="bi bi-files"></i> 发票总数</span>
+                <span class="stat-value" id="gsCount">0</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label"><i class="bi bi-currency-yen"></i> 总金额</span>
+                <span class="stat-value text-primary" id="gsAmount">0.00</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label"><i class="bi bi-calendar-month"></i> 本月金额</span>
+                <span class="stat-value" id="gsMonth">0.00</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label"><i class="bi bi-calendar3"></i> 本年金额</span>
+                <span class="stat-value" id="gsYear">0.00</span>
+              </div>
+            </div>
+
+            <div class="stats-charts-grid" id="statsChartsGrid">
+              <div class="stats-chart-card stats-chart-wide">
+                <h6><i class="bi bi-graph-up-arrow me-1"></i> 近 12 个月金额趋势</h6>
+                <div class="chart-box"><canvas id="monthlyChart"></canvas></div>
+              </div>
+              <div class="stats-chart-card">
+                <h6><i class="bi bi-pie-chart me-1"></i> 状态分布</h6>
+                <div class="chart-box chart-box-square"><canvas id="statusChart"></canvas></div>
+              </div>
+              <div class="stats-chart-card">
+                <h6><i class="bi bi-bar-chart me-1"></i> 供应商 Top 5（按金额）</h6>
+                <div class="chart-box chart-box-square"><canvas id="vendorChart"></canvas></div>
+              </div>
+              <div class="stats-chart-card">
+                <h6><i class="bi bi-person-badge me-1"></i> 归属分布（按金额）</h6>
+                <div class="chart-box chart-box-square"><canvas id="attributionChart"></canvas></div>
+              </div>
+            </div>
+
+            <div id="statsEmpty" class="empty-state" style="display:none">
+              <div class="empty-icon"><i class="bi bi-bar-chart-line"></i></div>
+              <div class="empty-text">暂无数据</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="batchActions" style="display: none;">
     <div class="batch-info-float">
         已选 <span id="selectedCount">0</span> 张 · 总计 ¥<span id="totalAmountValue">0.00</span>
@@ -299,7 +367,7 @@
   <div class="toast-container position-fixed bottom-0 end-0 p-3">
     </div>
 
-  <script type="module" src="js/app.js?v=1.1.0"></script>
+  <script type="module" src="js/app.js?v=1.2.0"></script>
   <script>
     (function() {
         // 主题切换：类名挂在 <html> 上，与 <head> 中的预置脚本保持一致，避免闪屏
