@@ -5,10 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>发票管理系统</title>
 
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%BE%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://s4.zstatic.net" crossorigin />
+  <link rel="dns-prefetch" href="https://s4.zstatic.net" />
+  <script>
+    // 尽早应用已保存的主题（类名挂在 <html> 上），避免深色模式用户看到浅色闪烁（FOUC）
+    (function () {
+      try {
+        var theme = localStorage.getItem('theme');
+        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+        if (theme === 'dark') document.documentElement.classList.add('dark-mode');
+      } catch (e) { /* 忽略 */ }
+    })();
+  </script>
+
   <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/bootstrap/5.3.8/css/bootstrap.min.css" integrity="sha512-2bBQCjcnw658Lho4nlXJcc6WkV/UxpE/sAokbXPxQNGqmNdQrWqtw26Ns9kFF/yG792pKR1Sx8/Y1Lf1XN4GKA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css" integrity="sha512-t7Few9xlddEmgd3oKZQahkNI4dS6l80+eGEzFQiqtyVYdvcSG2D3Iub77R20BdotfRPA9caaRkg1tyaJiPmO0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />  
   <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" integrity="sha512-MQXduO8IQnJVq1qmySpN87QQkiR1bZHtorbJBD0tzy7/0U9+YIC93QWHeGTEoojMVHWWNkoCp8V6OzVSYrX0oQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="css/style.css?v=1.0.2" />
+  <link rel="stylesheet" href="css/style.css?v=1.1.0" />
 
 </head>
 <body>
@@ -84,6 +100,7 @@
             <div class="input-group">
                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
                 <input id="searchInput" class="form-control border-start-0" placeholder="按发票号、供应商或描述搜索... (Ctrl+F)">
+                <button id="searchClearBtn" class="btn btn-clear-search" type="button" aria-label="清空搜索" style="display:none"><i class="bi bi-x-lg"></i></button>
             </div>
             <div class="filter-group">
                 <select id="statusFilter" class="form-select status-filter">
@@ -139,6 +156,7 @@
         </div>
 
         <div class="pagination-bar">
+            <span id="pageInfo" class="page-info" style="display:none"></span>
             <nav aria-label="Page navigation">
                 <ul id="pagination" class="pagination mb-0"></ul>
             </nav>
@@ -272,66 +290,49 @@
     <button id="deselectAllBtn" class="btn btn-sm btn-link text-white text-decoration-none" title="取消选择"><i class="bi bi-x-lg"></i></button>
   </div>
 
-  <script src="https://s4.zstatic.net/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js" integrity="sha512-HvOjJrdwNpDbkGJIG2ZNqDlVqMo77qbs4Me4cah0HoDrfhrbA+8SBlZn1KrvAQw7cILLPFJvdwIgphzQmMm+Pw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://s4.zstatic.net/ajax/libs/pocketbase/0.26.2/pocketbase.umd.min.js" integrity="sha512-23hTPP5Tt6X+FXEQTtMkxAI7sRyPG0lUvhTsoAgYn8nFZ0jMO7ZFo7Qy9xKUyKbQ2dWUo8pvkXeVcta8on3d4Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://s4.zstatic.net/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://s4.zstatic.net/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" integrity="sha512-Qlv6VSKh1gDKGoJbnyA5RMXYcvnpIqhO++MhIM2fStMcGT9i2T//tSwYFlcyoRRDcDZ+TYHpH8azBBCyhpSeqw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://s4.zstatic.net/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://s4.zstatic.net/ajax/libs/flatpickr/4.6.13/flatpickr.min.js" integrity="sha512-K/oyQtMXpxI4+K0W7H25UopjM8pzq0yrVdFdG21Fh5dBe91I40pDd9A4lzNlHPHBIP2cwZuoxaUSX0GJSObvGA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://s4.zstatic.net/ajax/libs/flatpickr/4.6.13/l10n/zh.min.js" integrity="sha512-KU9LjAMoAxs8u2DU62DsIID671imkYuyOkE0/wbjVZDRM259WxX5IhQsWTTBMhtdnhviZEqfkdhG09k7JVf9pg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://s4.zstatic.net/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    // ⚠️ 修复2：使用 CDN 的 CMaps 路径，确保中文不乱码
-    pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://s4.zstatic.net/ajax/libs/pdf.js/3.11.174/cmaps/';
-    pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
-  </script>
+  <!-- Bootstrap 与 PocketBase SDK 为首屏必需：defer 并行下载、按序执行 -->
+  <script defer src="https://s4.zstatic.net/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js" integrity="sha512-HvOjJrdwNpDbkGJIG2ZNqDlVqMo77qbs4Me4cah0HoDrfhrbA+8SBlZn1KrvAQw7cILLPFJvdwIgphzQmMm+Pw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script defer src="https://s4.zstatic.net/ajax/libs/pocketbase/0.26.2/pocketbase.umd.min.js" integrity="sha512-23hTPP5Tt6X+FXEQTtMkxAI7sRyPG0lUvhTsoAgYn8nFZ0jMO7ZFo7Qy9xKUyKbQ2dWUo8pvkXeVcta8on3d4Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- JSZip / FileSaver / PDF.js / flatpickr 体积较大且非首屏必需，改为按需动态加载（见 js/modules/loaders.js） -->
+
 
   <div class="toast-container position-fixed bottom-0 end-0 p-3">
     </div>
 
-  <script type="module" src="js/app.js?v=1.0.4"></script>
+  <script type="module" src="js/app.js?v=1.1.0"></script>
   <script>
     (function() {
-        // This is a self-contained script to handle theme switching,
-        // to avoid any race conditions or module loading issues.
+        // 主题切换：类名挂在 <html> 上，与 <head> 中的预置脚本保持一致，避免闪屏
         try {
             const themeToggler = document.getElementById('theme-toggler');
-            const body = document.body;
-            
-            if (!themeToggler) {
-                console.error("Theme toggler button not found.");
-                return;
-            }
+            const icon = themeToggler?.querySelector('i');
 
-            const icon = themeToggler.querySelector('i');
-            if (!icon) {
-                console.error("Theme toggler icon not found.");
+            if (!themeToggler || !icon) {
+                console.error("Theme toggler button or icon not found.");
                 return;
             }
 
             function applyTheme(theme) {
-                if (theme === 'dark') {
-                    body.classList.add('dark-mode');
-                    icon.classList.remove('bi-sun-fill');
-                    icon.classList.add('bi-moon-fill');
-                } else {
-                    body.classList.remove('dark-mode');
-                    icon.classList.remove('bi-moon-fill');
-                    icon.classList.add('bi-sun-fill');
-                }
+                const dark = theme === 'dark';
+                document.documentElement.classList.toggle('dark-mode', dark);
+                icon.classList.toggle('bi-sun-fill', !dark);
+                icon.classList.toggle('bi-moon-fill', dark);
             }
 
             themeToggler.addEventListener('click', function() {
-                const newTheme = body.classList.contains('dark-mode') ? 'light' : 'dark';
+                const newTheme = document.documentElement.classList.contains('dark-mode') ? 'light' : 'dark';
                 localStorage.setItem('theme', newTheme);
                 applyTheme(newTheme);
             });
 
-            // Set initial theme on load
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const defaultTheme = savedTheme || (prefersDark ? 'dark' : 'light');
-            applyTheme(defaultTheme);
+            // 与 <head> 中预置的主题状态同步图标
+            applyTheme(document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light');
+
+            // 兜底：模块加载失败时，8 秒后自动隐藏加载遮罩，避免页面被永久遮挡
+            setTimeout(function () {
+                const overlay = document.getElementById('loading-overlay');
+                if (overlay) overlay.classList.add('hidden');
+            }, 8000);
 
         } catch (e) {
             console.error("Critical error in theme switcher script:", e);

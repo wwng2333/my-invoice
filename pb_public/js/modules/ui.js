@@ -32,11 +32,13 @@ export function initializeElements() {
         addInvoiceBtn: getEl("addInvoiceBtn"),
         recognizeInvoiceNumberBtn: getEl("recognizeInvoiceNumberBtn"),
         searchInput: getEl("searchInput"),
+        searchClearBtn: getEl("searchClearBtn"),
         statusFilter: getEl("statusFilter"),
         attributionFilter: getEl("attributionFilter"),
         itemsPerPageSelect: getEl("itemsPerPageSelect"),
         invoiceList: getEl("invoiceList"),
         pagination: getEl("pagination"),
+        pageInfo: getEl("pageInfo"),
         paginationControls: getEl("paginationControlsWrapper"),
         noInvoicesMessage: getEl("noInvoicesMessage"),
         loading: getEl("loading"),
@@ -81,6 +83,19 @@ export function initializeElements() {
 }
 
 /**
+ * 生成本地首字母头像的 SVG data URI（不向第三方服务发送用户邮箱）。
+ * 防御性：即使 PocketBase 已校验 email 格式，对 initial 也做 HTML 转义，
+ * 防止首字母为 < / & / " 等特殊字符时破坏 SVG 标记或产生注入。
+ * fill 使用青绿主题色 (%23 = '#')。
+ * @param {string} email 用户邮箱。
+ * @returns {string} SVG data URI。
+ */
+function buildInitialAvatar(email) {
+    const initial = escapeHtml((email || "?").charAt(0).toUpperCase());
+    return `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='64' height='64' rx='32' fill='%230d9488'/><text x='32' y='32' dominant-baseline='central' text-anchor='middle' font-size='28' font-family='sans-serif' fill='white'>${initial}</text></svg>`;
+}
+
+/**
  * Renders the main UI based on authentication status.
  */
 export function renderUI(loadInvoicesCallback) {
@@ -94,12 +109,14 @@ export function renderUI(loadInvoicesCallback) {
         els.currentAvatarImg.style.display = "";
         if (model.avatar) {
             els.currentAvatarImg.src = getFileUrl(model, model.avatar);
+            // 头像文件在服务端缺失（被清理/改名导致 404）时，回退到本地生成的首字母头像
+            els.currentAvatarImg.onerror = () => {
+                els.currentAvatarImg.onerror = null;
+                els.currentAvatarImg.src = buildInitialAvatar(model.email);
+            };
         } else {
-            // 防御性：即使 PocketBase 已校验 email 格式，对 initial 也做一次转义，
-            // 防止首字母为 < / & / " 等特殊字符时破坏 SVG 标记或产生注入。
-            // fill 使用青绿主题色 (%23 = '#')。
-            const initial = escapeHtml(model.email.charAt(0).toUpperCase());
-            els.currentAvatarImg.src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='64' height='64' rx='32' fill='%230d9488'/><text x='32' y='32' dominant-baseline='central' text-anchor='middle' font-size='28' font-family='sans-serif' fill='white'>${initial}</text></svg>`;
+            els.currentAvatarImg.onerror = null;
+            els.currentAvatarImg.src = buildInitialAvatar(model.email);
         }
         state.itemsPerPage = parseInt(els.itemsPerPageSelect.value, 10);
         loadInvoicesCallback();
@@ -161,6 +178,14 @@ export function createInvoiceRow(rec, { onSelect, onEdit, onDelete }) {
     });
 
     return tr;
+}
+
+/**
+ * 显示/隐藏搜索框的“清空”按钮。
+ * @param {boolean} visible 是否可见。
+ */
+export function toggleSearchClear(visible) {
+    if (els.searchClearBtn) els.searchClearBtn.style.display = visible ? "" : "none";
 }
 
 /**
@@ -234,9 +259,15 @@ export function renderPagination(totalItems, onPageChange) {
 
     if (totalItems === 0) {
         els.pagination.style.visibility = "hidden";
+        if (els.pageInfo) els.pageInfo.style.display = "none";
         return;
     }
     els.pagination.style.visibility = "visible";
+
+    if (els.pageInfo) {
+        els.pageInfo.textContent = `共 ${totalItems} 条记录 · 第 ${state.currentPage} / ${state.totalPages} 页`;
+        els.pageInfo.style.display = "";
+    }
 
     const createPageItem = (page, text, isActive = false, isDisabled = false) => {
         const li = document.createElement("li");

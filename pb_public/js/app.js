@@ -1,5 +1,6 @@
 import { state } from './modules/state.js';
 import { debounce, convertChineseToNumber } from './modules/utils.js';
+import { loadFlatpickr, loadPdfJs, loadZipTools } from './modules/loaders.js';
 import * as api from './modules/api.js';
 import * as ui from './modules/ui.js';
 import { CONFIG } from './config.js';
@@ -34,17 +35,9 @@ function safeInitialize() {
         setupEventListeners();
         ui.renderUI(loadInvoices);
 
-        // Initialize flatpickr after elements are available to avoid timing issues.
-        try {
-            flatpickr(ui.els.invoiceDate, {
-                dateFormat: "Y-m-d",
-                locale: flatpickr.l10ns.zh,
-                allowInput: true 
-            });
-        } catch (err) {
-            console.warn('flatpickr initialization skipped:', err);
-        }
-        
+        // flatpickr 改为按需加载：后台预取，不阻塞首屏渲染
+        ensureFlatpickr();
+
         initialized = true;
         console.log("✓ Application initialized successfully.");
 
@@ -58,6 +51,31 @@ function safeInitialize() {
         console.error("Error during initialization:", e);
         ui.showToast("应用初始化失败，请刷新页面。", 'danger');
     }
+}
+
+let flatpickrInitializing = false;
+/**
+ * 按需加载并初始化 flatpickr 日期选择器（幂等；加载失败后允许下次重试）。
+ */
+function ensureFlatpickr() {
+    if (flatpickrInitializing) return;
+    flatpickrInitializing = true;
+    loadFlatpickr()
+        .then((fp) => {
+            try {
+                fp(ui.els.invoiceDate, {
+                    dateFormat: "Y-m-d",
+                    locale: fp.l10ns.zh,
+                    allowInput: true
+                });
+            } catch (err) {
+                console.warn('flatpickr initialization skipped:', err);
+            }
+        })
+        .catch(err => {
+            flatpickrInitializing = false;
+            console.warn('flatpickr load failed:', err);
+        });
 }
 
 function setupEventListeners() {
@@ -77,6 +95,17 @@ function setupEventListeners() {
     ui.els.searchInput.oninput = debounce(() => { state.currentPage = 1; loadInvoices(); }, CONFIG.TIMEOUT.SEARCH_DEBOUNCE);
     ui.els.statusFilter.onchange = () => { state.currentPage = 1; loadInvoices(); };
     ui.els.attributionFilter.oninput = debounce(() => { state.currentPage = 1; loadInvoices(); }, CONFIG.TIMEOUT.SEARCH_DEBOUNCE);
+
+    // 搜索框一键清空按钮
+    const syncSearchClear = () => ui.toggleSearchClear(ui.els.searchInput.value.length > 0);
+    ui.els.searchInput.addEventListener('input', syncSearchClear);
+    ui.els.searchClearBtn.addEventListener('click', () => {
+        ui.els.searchInput.value = '';
+        syncSearchClear();
+        state.currentPage = 1;
+        loadInvoices();
+        ui.els.searchInput.focus();
+    });
 
     document.querySelectorAll("th[data-sort-by]").forEach(th => th.addEventListener("click", handleSortClick));
     ui.els.itemsPerPageSelect.onchange = handlePageSizeChange;
@@ -259,6 +288,7 @@ function checkSelectAllStatus() {
 }
 
 async function openModal(rec = null) {
+    ensureFlatpickr();
     ui.els.invoiceForm.reset();
     ui.els.attachments.value = '';
     ui.els.fileChosenText.textContent = '未选择文件';
@@ -300,8 +330,8 @@ async function handleRecognizePDF() {
         if (file.type !== "application/pdf") throw new Error("请选择 PDF 文件");
 
         const arrayBuffer = await file.arrayBuffer();
-        // 不再传入 cMapUrl/cMapPacked，复用 index.html 中设置的全局 CDN 配置，
-        // 避免覆盖导致 ./cmaps/ 404（目录不存在）造成中文 PDF 乱码。
+        // 按需加载 PDF.js（worker 与中文 cMap 配置见 loaders.js，避免中文 PDF 乱码）
+        const pdfjsLib = await loadPdfJs();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
         let fullText = "";
@@ -448,6 +478,8 @@ async function handleBatchDownload() {
     ui.showLoader();
     
     try {
+        // 按需加载 JSZip 与 FileSaver
+        const { JSZip, saveAs } = await loadZipTools();
         const zip = new JSZip();
         const invoicesData = [];
         
@@ -489,7 +521,7 @@ async function handleBatchDownload() {
         saveAs(content, `Invoices_Export_${new Date().toISOString().slice(0,10)}.zip`);
 
     } catch(e) {
-        ui.showToast("Download error: " + e.message, 'danger');
+        ui.showToast("下载失败：" + e.message, 'danger');
     }
     
     ui.hideLoader();
@@ -533,14 +565,29 @@ function handleSelectAll() {
 
 function handleGlobalKeys(e) {
     if (ui.els.invoiceModal.classList.contains('show')) return;
+    if (ui.els.confirmDeleteModal.classList.contains('show')) return;
+
+    const active = document.activeElement;
+    const inEditable = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
+
+    // 搜索框内按 Esc：清空搜索并退出焦点
+    if (e.key === 'Escape' && active === ui.els.searchInput) {
+        if (ui.els.searchInput.value) {
+            ui.els.searchInput.value = '';
+            ui.toggleSearchClear(false);
+            state.currentPage = 1;
+            loadInvoices();
+        }
+        ui.els.searchInput.blur();
+        return;
+    }
 
     if (e.ctrlKey && e.key === "a") {
-        const tag = document.activeElement?.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (inEditable) return;
         e.preventDefault();
         const allCheckboxes = document.querySelectorAll(".row-select-checkbox");
         if(allCheckboxes.length === 0) return;
-        
+
         const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
         if (allChecked) {
             deselectAll();
@@ -553,9 +600,10 @@ function handleGlobalKeys(e) {
     if (e.ctrlKey && e.key === "f") {
         e.preventDefault();
         ui.els.searchInput.focus();
+        ui.els.searchInput.select();
     }
-    
-    if (e.key === "Escape") {
+
+    if (e.key === "Escape" && !inEditable) {
         deselectAll();
     }
 }

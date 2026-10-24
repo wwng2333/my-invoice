@@ -58,7 +58,7 @@
     --skeleton-shine: #f3f4f6;
 }
 
-body.dark-mode {
+html.dark-mode {
     /* Dark Theme Palette */
     --bg-color: #111827;
     --fg-color: #e5e7eb;
@@ -73,7 +73,7 @@ body.dark-mode {
     --skeleton-shine: #4b5563;
 }
 
-body.dark-mode .text-muted {
+html.dark-mode .text-muted {
     color: var(--muted-color) !important;
 }
 
@@ -262,7 +262,7 @@ body {
     background-color: var(--primary-light) !important;
     box-shadow: inset 3px 0 0 var(--primary-color);
 }
-body.dark-mode .invoice-row.selected {
+html.dark-mode .invoice-row.selected {
     background-color: #134e4a !important;
 }
 .row-select-checkbox {
@@ -288,10 +288,10 @@ body.dark-mode .invoice-row.selected {
 .bg-warning { background-color: #fffbeb !important; color: #b45309 !important; border-color: #fde68a !important; }
 .bg-info { background-color: #e0f2fe !important; color: #0369a1 !important; border-color: #bae6fd !important; }
 .bg-success { background-color: #f0fdf4 !important; color: #15803d !important; border-color: #bbf7d0 !important; }
-body.dark-mode .bg-secondary { background-color: #374151 !important; color: #d1d5db !important; }
-body.dark-mode .bg-warning { background-color: #452b0d !important; color: #fef3c7 !important; border-color: #78350f !important; }
-body.dark-mode .bg-info { background-color: #0c4a6e !important; color: #e0f2fe !important; border-color: #0284c7 !important; }
-body.dark-mode .bg-success { background-color: #14532d !important; color: #dcfce7 !important; border-color: #22c55e !important; }
+html.dark-mode .bg-secondary { background-color: #374151 !important; color: #d1d5db !important; }
+html.dark-mode .bg-warning { background-color: #452b0d !important; color: #fef3c7 !important; border-color: #78350f !important; }
+html.dark-mode .bg-info { background-color: #0c4a6e !important; color: #e0f2fe !important; border-color: #0284c7 !important; }
+html.dark-mode .bg-success { background-color: #14532d !important; color: #dcfce7 !important; border-color: #22c55e !important; }
 
 
 /* --- Form Elements & Buttons --- */
@@ -348,7 +348,7 @@ body.dark-mode .bg-success { background-color: #14532d !important; color: #dcfce
     background-position: right 0.75rem center;
     background-size: 16px 12px;
 }
-body.dark-mode .form-select {
+html.dark-mode .form-select {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23d1d5db' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
 }
 
@@ -360,7 +360,7 @@ body.dark-mode .form-select {
     background-color: var(--card-bg-secondary);
     border-left: 1px solid var(--border-color);
 }
-body.dark-mode .form-sidebar {
+html.dark-mode .form-sidebar {
     border-left: 1px solid var(--border-color);
 }
 
@@ -384,7 +384,7 @@ body.dark-mode .form-sidebar {
     z-index: 1050; opacity: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-body.dark-mode #batchActions {
+html.dark-mode #batchActions {
     background: #374151;
 }
 #batchActions.show { transform: translateX(-50%) translateY(0); opacity: 1; }
@@ -423,7 +423,7 @@ body.dark-mode #batchActions {
 .btn-close {
     filter: brightness(0) invert(1);
 }
-body.dark-mode .btn-close {
+html.dark-mode .btn-close {
     filter: brightness(0) invert(1);
 }
 
@@ -468,9 +468,15 @@ body.dark-mode .btn-close {
 /* --- Pagination --- */
 .pagination-bar {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 8px;
     padding-top: 12px;
+}
+.page-info {
+    font-size: 0.8rem;
+    color: var(--muted-color);
 }
 #pagination {
     justify-content: center;
@@ -508,7 +514,7 @@ body.dark-mode .btn-close {
     color: var(--primary-color);
 }
 
-body.dark-mode #noInvoicesMessage {
+html.dark-mode #noInvoicesMessage {
     color: var(--fg-color) !important;
 }
 
@@ -541,7 +547,7 @@ body.dark-mode #noInvoicesMessage {
     padding: 4px 8px;
     font-size: 0.8rem;
 }
-body.dark-mode .new-file-chip {
+html.dark-mode .new-file-chip {
     background: rgba(13, 148, 136, 0.15);
 }
 .new-file-chip .chip-name {
@@ -615,4 +621,31 @@ body.dark-mode .new-file-chip {
     .batch-info-float { top: -38px; font-size: 0.78rem; padding: 4px 10px; }
 
     .modal-footer .btn { padding: 0.35rem 0.6rem; font-size: 0.85rem; }
+}
+
+/* --- Search clear button --- */
+.search-filter-controls .btn-clear-search {
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg);
+    color: var(--muted-color);
+    padding: 0.5rem 0.7rem;
+}
+.search-filter-controls .btn-clear-search:hover {
+    color: var(--fg-color);
+    background-color: var(--card-bg-secondary);
+}
+.search-filter-controls .btn-clear-search:focus-visible {
+    box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+/* --- Reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
